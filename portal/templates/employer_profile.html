@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container my-5">
+  <h2 class="mb-4">👨💼 Profil pracodawcy: {{ profile_user.username }}</h2>
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-primary">
+        <div class="card-body">
+          <h5 class="card-title">📊 Statystyki</h5>
+          <p>Liczba ofert: <strong>{{ stats.total_jobs }}</strong></p>
+          <p>Aktywne oferty: <strong>{{ stats.active_jobs }}</strong></p>
+          <p>👍 Polecenia: <strong>{{ stats.positive_recommendations }}</strong></p>
+          <p>👎 Niepolecenia: <strong>{{ stats.negative_recommendations }}</strong></p>
+          {% if profile_user.profile.company_name %}
+            <p>Firma: <strong>{{ profile_user.profile.company_name }}</strong></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if can_recommend %}
+    <div class="col-md-6">
+      <div class="card shadow-sm border-success">
+        <div class="card-body">
+          <h5 class="card-title">📝 Dodaj opinię o pracodawcy</h5>
+          <form method="post" action="{% url 'add_recommendation' profile_user.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              {{ form.is_positive.label_tag }}
+              {{ form.is_positive }}
+            </div>
+            <div class="mb-3">
+              {{ form.comment.label_tag }}
+              {{ form.comment }}
+            </div>
+            <button type="submit" class="btn btn-success">Zapisz opinię</button>
+            <a href="{% url 'employer_profile' profile_user.id %}" class="btn btn-secondary">Anuluj</a>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <hr class="my-4">
+  <h3 class="mb-3">💼 Oferty pracy pracodawcy</h3>
+  <div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for job in jobs %}
+    <div class="col">
+      <div class="card h-100">
+        {% if job.image %}
+          <img src="{{ job.image.url }}" class="card-img-top" alt="Oferta">
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ job.title }}</h5>
+          <p>{{ job.description|truncatewords:25 }}</p>
+          <p class="text-success">{{ job.get_salary_range }}</p>
+          <a href="{% url 'job_detail' job.id %}" class="btn btn-primary btn-sm">Zobacz</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p>Brak ofert pracy.</p>
+    {% endfor %}
+  </div>
+  <hr class="my-4">
+  <h4 class="mt-4">💬 Opinie o pracodawcy</h4>
+  <ul class="list-group my-3">
+    {% for rec in recommendations %}
+    <li class="list-group-item">
+      <strong>{{ rec.from_user.username }}</strong>:
+      {% if rec.is_positive %}
+        <span class="text-success">Poleca</span>
+      {% else %}
+        <span class="text-danger">Nie poleca</span>
+      {% endif %}
+      {% if request.user != rec.from_user %}
+        <form action="{% url 'report_recommendation' rec.id %}" method="post" class="d-inline ms-2">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Zgłosić tę opinię jako obraźliwą lub spam?');">Zgłoś</button>
+        </form>
+      {% endif %}
+      {% if rec.comment %}
+        <br><small class="text-muted">{{ rec.comment }}</small>
+      {% endif %}
+    </li>
+    {% empty %}
+    <li class="list-group-item">Brak opinii.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

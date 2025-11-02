@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <h2 class="my-4">📊 Panel administratora - statystyki</h2>
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card border-primary">
+        <div class="card-body">
+          <h5 class="card-title">Liczba użytkowników</h5>
+          <p class="display-6">{{ users_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-success">
+        <div class="card-body">
+          <h5 class="card-title">Liczba kategorii</h5>
+          <p class="display-6">{{ categories_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-info">
+        <div class="card-body">
+          <h5 class="card-title">Wszystkie oferty pracy</h5>
+          <p class="h3">{{ total_jobs }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-warning">
+        <div class="card-body">
+          <h5 class="card-title">Aktywne oferty pracy</h5>
+          <p class="h3">{{ active_jobs }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-danger">
+        <div class="card-body">
+          <h5 class="card-title">Wygasłe oferty pracy</h5>
+          <p class="h3">{{ expired_jobs }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-secondary">
+        <div class="card-body">
+          <h5 class="card-title">Liczba aplikacji</h5>
+          <p class="h3">{{ applications_count }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

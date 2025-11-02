@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>🗑️ Potwierdź usunięcie</h2>
+<p>Czy na pewno chcesz usunąć ofertę pracy: <strong>{{ job.title }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Usuń</button>
+    <a href="{% url 'job_detail' job.id %}" class="btn btn-secondary">Anuluj</a>
+</form>
+{% endblock %}
