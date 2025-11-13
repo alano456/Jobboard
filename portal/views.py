@@ -378,3 +378,80 @@ def admin_dashboard(request):
         'users_count': users_count,
         'categories_count': categories_count,
     })
+
+
+
+from rest_framework import viewsets, generics, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.utils import timezone
+from .forms import RegisterForm
+from django.db.models import Q
+from django.contrib.auth import login
+from .models import Job, Category, Application, Profile
+from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer
+
+#-------------------------------------------
+
+class RegisterView(APIView):
+     def get(self, request):
+        return Response({"message": "Use POST to register"}, status=200)
+     def post(self, request):
+        form = RegisterForm(request.data)
+
+        if form.is_valid():
+            user = form.save()
+
+            profile = getattr(user, 'profile', None)
+            if profile: 
+                profile.is_employer = form.cleaned_data.get('is_employer', False)
+                if profile.is_employer:
+                    profile.company_name = form.cleaned_data.get('company_name', '')
+                profile.save()
+
+            login(request, user)
+            return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+        else:
+             return Response({"errors": form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.AllowAny]
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('id')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class JobViewSet(viewsets.ModelViewSet):
+    queryset = Job.objects.all().order_by('-created_at')
+    serializer_class = JobSerializer
+    permission_classes = [permissions.AllowAny]
+
+    # пример фильтрации по категории и поиску
+    def get_queryset(self):
+        queryset = Job.objects.all()
+        category = self.request.query_params.get('category')
+        search = self.request.query_params.get('q')
+        if category:
+            queryset = queryset.filter(category__id=category)
+        if search:
+            queryset = queryset.filter(title__icontains=search)
+        return queryset
+
+
+class ApplicationViewSet(viewsets.ModelViewSet):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [permissions.AllowAny]
