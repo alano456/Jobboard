@@ -3,6 +3,7 @@ import { EmployerSidebar } from '../src/components/Sidebar';
 import { NavbarEmployer } from '../src/components/Navbar';
 import { AllCandidateInOffer, AppliedOffers, MainDashboard } from "../src/components/DashboardsForEmployer";
 import { NewJob } from "../src/components/NewJob";
+import { SearchJobs, SearchCandidates, Notifications } from "../src/components/EmployerFeatures";
 import { useState } from "react";
 
 export const DashboardEmployer = () => {
@@ -22,6 +23,9 @@ export const DashboardEmployer = () => {
                 {mode === "newjob" && <NewJob />}
                 {mode === "alljob" && <AppliedOffers mode={mode} setMode={setMode} />}
                 {mode === "allCandidatesInOffer" && <AllCandidateInOffer />}
+                {mode === "search_jobs" && <SearchJobs />}
+                {mode === "search_candidates" && <SearchCandidates />}
+                {mode === "notifications" && <Notifications />}
             </div>
         </div>
     )

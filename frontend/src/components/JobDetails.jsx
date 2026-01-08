@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, MapPin, Building2, Calendar, Banknote } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, Calendar, Banknote, Heart, Loader2 } from "lucide-react";
 import api from "../api";
 
 export const JobDetails = ({ jobId, onBack }) => {
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [saving, setSaving] = useState(false);
+    const [applying, setApplying] = useState(false);
 
     useEffect(() => {
         const fetchJobDetails = async () => {
@@ -23,6 +26,33 @@ export const JobDetails = ({ jobId, onBack }) => {
 
         fetchJobDetails();
     }, [jobId]);
+
+    const handleSave = async () => {
+        if (!job) return;
+        setSaving(true);
+        try {
+            const res = await api.post(`/jobs/${job.id}/toggle_save/`);
+            setJob(prev => ({ ...prev, is_saved: res.data.status === 'added' }));
+        } catch (err) {
+            console.error("Save failed", err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleApply = async () => {
+        if (!job) return;
+        setApplying(true);
+        try {
+            await api.post(`/jobs/${job.id}/apply/`);
+            alert("Aplikacja wysłana pomyślnie!");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || "Wystąpił błąd podczas aplikowania.";
+            alert(errorMsg);
+        } finally {
+            setApplying(false);
+        }
+    };
 
     if (loading) return <div className="p-10">Ładowanie szczegółów oferty...</div>;
     if (error) return <div className="p-10 text-red-500">{error}</div>;
@@ -50,9 +80,22 @@ export const JobDetails = ({ jobId, onBack }) => {
                                     IMG
                                 </div>
                             </div>
-                            <button onClick={() => alert("Funkcja aplikowania dostępna wkrótce!")} className="mt-12 bg-purple-800 text-white px-8 py-3 rounded-md font-bold hover:bg-purple-900 transition-colors shadow-sm">
-                                Aplikuj teraz
-                            </button>
+                            <div className="flex items-center gap-3 mt-12">
+                                <button
+                                    onClick={handleSave}
+                                    className="p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+                                    disabled={saving}
+                                >
+                                    {saving ? <Loader2 className="animate-spin text-purple-800" /> : <Heart className={job.is_saved ? "fill-red-500 text-red-500" : "text-gray-400"} />}
+                                </button>
+                                <button
+                                    onClick={handleApply}
+                                    disabled={applying}
+                                    className="bg-purple-800 text-white px-8 py-3 rounded-md font-bold hover:bg-purple-900 transition-colors shadow-sm flex items-center gap-2"
+                                >
+                                    {applying ? <Loader2 className="animate-spin" /> : "Aplikuj teraz"}
+                                </button>
+                            </div>
                         </div>
 
                         <h1 className="text-3xl font-extrabold text-slate-800 mb-2">{job.title}</h1>

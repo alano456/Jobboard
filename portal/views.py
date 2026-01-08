@@ -390,7 +390,7 @@ from .forms import RegisterForm
 from django.db.models import Q
 from django.contrib.auth import login
 from .models import Job, Category, Application, Profile
-from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer
+from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer, ChangePasswordSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 
@@ -444,11 +444,37 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def change_password(self, request):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            if not user.check_password(serializer.data.get("old_password")):
+                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(serializer.data.get("new_password"))
+            user.save()
+            return Response({"status": "Password set"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get', 'patch'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        if request.method == 'GET':
+            serializer = self.get_serializer(request.user)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            serializer = self.get_serializer(request.user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
+
 
 
 class JobViewSet(viewsets.ModelViewSet):
@@ -467,6 +493,46 @@ class JobViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=search)
         return queryset
 
+    @action(detail=False, methods=['get'])
+    def saved(self, request):
+        if not request.user.is_authenticated:
+             return Response({"error": "Authentication required"}, status=401)
+        saved_jobs = request.user.saved_jobs.all()
+        serializer = self.get_serializer(saved_jobs, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def toggle_save(self, request, pk=None):
+        job = self.get_object()
+        user = request.user
+        if user in job.saved_by.all():
+            job.saved_by.remove(user)
+            return Response({"status": "removed", "message": "Usunięto z zapisanych."})
+        else:
+            job.saved_by.add(user)
+            return Response({"status": "added", "message": "Dodano do zapisanych!"})
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def apply(self, request, pk=None):
+        job = self.get_object()
+        user = request.user
+
+        if user == job.user:
+             return Response({"error": "Nie możesz aplikować na własną ofertę."}, status=400)
+        
+        if Application.objects.filter(job=job, candidate=user).exists():
+             return Response({"error": "Już aplikowałeś na tę ofertę."}, status=400)
+
+        # Basic application create
+        app = Application.objects.create(
+            job=job,
+            candidate=user,
+            status='applied' # Assuming default status
+        )
+        # Note: Sending email logic could be here too
+        
+        return Response({"message": "Aplikacja wysłana!"}, status=201)
+
     def perform_create(self, serializer):
         user = self.request.user
         if not user.is_authenticated:
@@ -479,6 +545,8 @@ class JobViewSet(viewsets.ModelViewSet):
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
-    queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Application.objects.filter(candidate=self.request.user)
