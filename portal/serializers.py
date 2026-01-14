@@ -6,18 +6,30 @@ from django.contrib.auth.models import User
 # ==== USER ====
 
 class UserSerializer(serializers.ModelSerializer):
+    is_employer = serializers.BooleanField(source='profile.is_employer', read_only=True)
+    company_name = serializers.CharField(source='profile.company_name', read_only=True)
+
     class Meta:
         model = User
-        fields = ['id','username','email', 'first_name', 'last_name']
+
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_employer', 'company_name']
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
 
 
 # ==== PROFILE ====
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only = True)
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = Profile
         fields = '__all__'
+
 
 
 # === Category ===
@@ -30,16 +42,25 @@ class CategorySerializer(serializers.ModelSerializer):
 # === Job ===
 class JobSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    #category = CategorySerializer(read_only=True)
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all()
+    )
+    is_saved = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
         fields = [
             'id', 'title', 'description', 'start_date', 'expires_at',
             'category', 'user', 'image', 'salary_min', 'salary_max',
-            'location', 'job_type', 'experience_required', "responsibilities", "contract_type"
+            'location', 'job_type', 'experience_required', "is_saved", "responsibilities", "contract_type"
+
         ]
+
+    def get_is_saved(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.saved_by.filter(id=request.user.id).exists()
+        return False
 
 
 

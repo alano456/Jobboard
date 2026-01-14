@@ -13,12 +13,9 @@ export const EmployersList = () => {
                 // For now fetching all users and filtering client side if needed, or using a specific endpoint if available
                 const response = await api.get('/users/');
                 const data = response.data.results ? response.data.results : response.data;
-                // Filter for employers if backend doesn't filter by endpoint
-                const employerList = Array.isArray(data) ? data.filter(user => user.profile?.is_employer) : [];
-                // Note: user.profile access depends on serializer structure. 
-                // If simple user list, might need different endpoint.
-                // Fallback to just showing all users for initial test if structure uncertain
-                setEmployers(Array.isArray(data) ? data : []);
+                // Filter for employers using new root field or fallback
+                const employerList = Array.isArray(data) ? data.filter(user => user.is_employer || user.profile?.is_employer) : [];
+                setEmployers(employerList);
             } catch (error) {
                 console.error("Failed to fetch employers:", error);
             } finally {
@@ -45,8 +42,10 @@ export const EmployersList = () => {
                         <div key={emp.id} className="border border-gray-300 p-4 rounded-md bg-white">
                             <h3 className="text-lg font-bold text-slate-800">{emp.username}</h3>
                             <p className="text-gray-500">{emp.email}</p>
-                            {/* Display company name if available */}
-                            {emp.profile?.company_name && <p className="font-medium text-purple-800">{emp.profile.company_name}</p>}
+                            {/* Display company name from root or profile */}
+                            {(emp.company_name || emp.profile?.company_name) && (
+                                <p className="font-medium text-purple-800">{emp.company_name || emp.profile?.company_name}</p>
+                            )}
                         </div>
                     ))
                 ) : (

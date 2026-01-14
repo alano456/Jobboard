@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowBigRight, X } from "lucide-react";
 import MyDatePicker from "./DatePicker";
 import api from "../api";
@@ -53,19 +53,18 @@ export const NewJob = () => {
         // location (taking from workMode logic or adding field), job_type, experience_required
 
         const payload = {
-            title: title,
-            description: description,
-            responsibilities: responsibilities,
-            category: Number(category),
-            salary_min: salaryMin || null,
-            salary_max: salaryMax || null,
+            title: title || "",
+            description: description || "",
+            responsibilities: responsibilities || "",
+            category: category && category !== 'none' ? Number(category) : null, // must match model FK
+            salary_min: salaryMin ? Number(salaryMin) : null,
+            salary_max: salaryMax ? Number(salaryMax) : null,
             start_date: startDate ? new Date(startDate).toISOString().split("T")[0] : null,
-            job_type: workMode, // mapping to model choices
-            experience_required: experience,
-            contract_type: contractType,
-            // Assuming location is manual or derived, let's just send 'Polska' for now or add input
-            location: location,
-            expires_at: expireDate ? new Date(expireDate).toISOString() : null
+            expires_at: expireDate ? new Date(expireDate).toISOString() : null,
+            job_type: workMode,       // must match choices key
+            experience_required: experience, // must match choices key
+            contract_type: contractType,     // must match choices key
+            location: location || ""
         };
 
         try {

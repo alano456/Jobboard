@@ -1,10 +1,9 @@
-import React from "react";
-import { ArrowBigLeft, ArrowBigRight, BrainCircuitIcon, BriefcaseBusiness, Building2, CircleUser, Phone } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowBigLeft, ArrowBigRight, BriefcaseBusiness, Building2, CircleUser, Phone } from "lucide-react";
 import { AboutEmployer, BasicInformation, ContactInformation } from "../src/components/EmployerAccountSetUp";
-import { useState } from "react";
 import { BasicInformationUser, CVUser, ContactInformationUser } from "../src/components/UserAccountSetUp";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import api from '../src/api';
 
 export const RegisterSetupWrapper = () => {
     const location = useLocation();
@@ -12,7 +11,6 @@ export const RegisterSetupWrapper = () => {
 
     return role === "Kandydat" ? <RegisterUserContinue /> : <RegisterContinue />;
 }
-
 
 export const RegisterContinue = () => {
 
@@ -61,8 +59,6 @@ export const RegisterContinue = () => {
             updateFormData={updateFormData}
         />
     ]
-
-    const navigate = useNavigate();
 
     const nextStep = () => {
         if (currentStep < steps.length - 1) {
@@ -125,6 +121,46 @@ export const RegisterContinue = () => {
     const prevStep = () => {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);
     };
+
+    const handleFinish = async () => {
+        try {
+            const userId = localStorage.getItem('user_id');
+            // Fetch profile to get ID
+            const profilesRes = await api.get('/profiles/');
+            const myProfile = profilesRes.data.find(p => p.user === parseInt(userId));
+
+            if (!myProfile) {
+                alert("Nie znaleziono profilu użytkownika.");
+                return;
+            }
+
+            const data = new FormData();
+            // Append explicit fields
+            if (formData.company_name) data.append('company_name', formData.company_name);
+            if (formData.short_description) data.append('short_description', formData.short_description);
+            if (formData.detailed_description) data.append('detailed_description', formData.detailed_description);
+            if (formData.work_culture) data.append('work_culture', formData.work_culture);
+            if (formData.company_type) data.append('company_type', formData.company_type);
+            if (formData.team_size) data.append('team_size', formData.team_size);
+            if (formData.founding_date) data.append('founding_date', formData.founding_date.toISOString().split('T')[0]);
+            if (formData.website) data.append('website', formData.website);
+            if (formData.location) data.append('location', formData.location);
+            if (formData.phone_number) data.append('phone_number', formData.phone_number);
+
+            if (formData.company_logo) data.append('company_logo', formData.company_logo);
+            if (formData.company_banner) data.append('company_banner', formData.company_banner);
+
+            await api.patch(`/profiles/${myProfile.id}/`, data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            navigate('/empl-dashboard');
+
+        } catch (error) {
+            console.error("Setup error:", error);
+            alert("Wystąpił błąd podczas zapisywania danych. Spróbuj ponownie.");
+        }
+    }
 
     return (
         <div className="bg-white w-screen h-auto overflow-x-hidden py-4 flex items-center justify-center">
@@ -224,16 +260,15 @@ export const RegisterUserContinue = () => {
             updateFormData={updateFormData} />
     ];
 
-    const navigate = useNavigate();
 
     const nextStep = async (e) => {
         e.preventDefault();
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            // Finish button clicked
             updateProfile()
             navigate('/us-dashboard');
+
         }
     };
 
@@ -296,6 +331,53 @@ export const RegisterUserContinue = () => {
     const prevStep = () => {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);
     };
+
+    const handleFinish = async () => {
+        try {
+            const userId = localStorage.getItem('user_id');
+            // Fetch profile to get ID
+            const profilesRes = await api.get('/profiles/');
+            const myProfile = profilesRes.data.find(p => p.user === parseInt(userId));
+
+            if (!myProfile) {
+                alert("Nie znaleziono profilu użytkownika.");
+                return;
+            }
+
+            const data = new FormData();
+            if (formData.education) data.append('education', formData.education);
+            if (formData.experience_years) data.append('experience_years', formData.experience_years);
+            if (formData.website) data.append('website', formData.website);
+            if (formData.github_link) data.append('github_link', formData.github_link);
+            if (formData.linkedin_link) data.append('linkedin_link', formData.linkedin_link);
+            if (formData.nationality) data.append('nationality', formData.nationality);
+            if (formData.birth_date) data.append('birth_date', formData.birth_date.toISOString().split('T')[0]);
+            if (formData.gender) data.append('gender', formData.gender);
+
+            // Append bio, maybe including marital status
+            let fullBio = formData.bio || '';
+            if (formData.marital_status) {
+                fullBio += `\nStan cywilny: ${formData.marital_status}`;
+            }
+            if (fullBio) data.append('bio', fullBio);
+
+            if (formData.location) data.append('location', formData.location);
+            if (formData.phone_number) data.append('phone_number', formData.phone_number);
+
+            if (formData.profile_picture) data.append('profile_picture', formData.profile_picture);
+            if (formData.cv) data.append('cv', formData.cv);
+
+            await api.patch(`/profiles/${myProfile.id}/`, data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            navigate('/us-dashboard'); // Navigate to user dashboard
+
+        } catch (error) {
+            console.error("Setup error:", error);
+            alert("Wystąpił błąd podczas zapisywania danych. Spróbuj ponownie.");
+        }
+    }
 
     return (
         <div className="bg-white w-screen h-auto overflow-x-hidden py-4 flex items-center justify-center">

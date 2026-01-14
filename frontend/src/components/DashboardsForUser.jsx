@@ -4,9 +4,36 @@ import { useState, useRef, useEffect } from "react";
 import MyDatePicker from "./DatePicker";
 import Editor from "./TextEditor";
 import { useActionData } from "react-router-dom";
+import api from "../api";
 
 
 export const MainDashboard = () => {
+    const [stats, setStats] = useState({ applied: 0, saved: 0, notifications: 0 });
+    const [recentApplications, setRecentApplications] = useState([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [appsRes, savedRes] = await Promise.all([
+                    api.get('/applications/'),
+                    api.get('/jobs/saved/')
+                ]);
+
+                // Sort applications by date desc for "Recent"
+                const sortedApps = appsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                setStats({
+                    applied: appsRes.data.length,
+                    saved: savedRes.data.length,
+                    notifications: 0 // Mock for now
+                });
+                setRecentApplications(sortedApps.slice(0, 5));
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -84,7 +111,7 @@ export const MainDashboard = () => {
             <div className="flex items-center justify-between flex-row gap-5">
                 <div className="bg-indigo-100 rounded-md px-4 py-5 flex gap-5 items-center flex-1 justify-between">
                     <div className="flex gap-1 flex-col">
-                        <h1 className="text-2xl text-slate-800 font-semibold">10</h1>
+                        <h1 className="text-2xl text-slate-800 font-semibold">{stats.applied}</h1>
                         <p className="text-[14px]">Aplikowane stanowiska</p>
                     </div>
                     <div className="bg-white p-4 rounded-sm">
@@ -93,7 +120,7 @@ export const MainDashboard = () => {
                 </div>
                 <div className="bg-amber-100 rounded-md px-4 py-5 flex gap-5 items-center flex-1 justify-between">
                     <div className="flex gap-1 flex-col">
-                        <h1 className="text-2xl text-slate-800 font-semibold">10</h1>
+                        <h1 className="text-2xl text-slate-800 font-semibold">{stats.saved}</h1>
                         <p className="text-[14px]">Zapisane oferty</p>
                     </div>
                     <div className="bg-white p-4 rounded-sm">
@@ -102,7 +129,7 @@ export const MainDashboard = () => {
                 </div>
                 <div className="bg-emerald-100 rounded-md px-4 flex-1 py-5 flex gap-5 items-center justify-between">
                     <div className="flex gap-1 flex-col">
-                        <h1 className="text-2xl text-slate-800 font-semibold">10</h1>
+                        <h1 className="text-2xl text-slate-800 font-semibold">{stats.notifications}</h1>
                         <p className="text-[14px]">Powiadomienia</p>
                     </div>
                     <div className="bg-white p-4 rounded-sm">
@@ -123,12 +150,10 @@ export const MainDashboard = () => {
                     <p>AKCJE</p>
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
+                    {recentApplications.map(app => (
+                        <Application key={app.id} data={app} />
+                    ))}
+                    {recentApplications.length === 0 && <p className="text-center p-4 text-gray-500">Brak ostatnich aplikacji.</p>}
                 </div>
 
             </div>
@@ -136,21 +161,29 @@ export const MainDashboard = () => {
     )
 }
 
-export const Application = ({ setMode }) => {
+export const Application = ({ setMode, data }) => {
+    if (!data) return null;
+    const { job, created_at, status } = data;
+
+    const formattedDate = new Date(created_at).toLocaleString();
+    const salary = job.salary_min ? (job.salary_max ? `${job.salary_min}-${job.salary_max}` : `Od ${job.salary_min}`) : "Do negocjacji";
 
     return (
         <div className="grid grid-cols-[2.8fr_1fr_2fr_1.4fr] items-center py-4 px-5 border-b border-gray-300">
             <div className="flex gap-3 flex-row">
-                <div className="bg-pink-900 rounded-md h-12 w-12"></div>
+                <div className="bg-pink-900 rounded-md h-12 w-12">
+                    {/* Placeholder for company logo or job image */}
+                    {job.image && <img src={job.image} alt="Logo" className="w-full h-full object-cover rounded-md" />}
+                </div>
                 <div className="flex flex-col gap-1">
                     <div className="flex flex-row gap-2 items-center justify-start">
-                        <h1>UI/UX Designer</h1>
-                        <span className="text-[14px] bg-purple-50 text-purple-950 rounded-xl px-2 py-1">Zdalna</span>
+                        <h1>{job.title}</h1>
+                        <span className="text-[14px] bg-purple-50 text-purple-950 rounded-xl px-2 py-1">{job.job_type || 'Zdalna'}</span>
                     </div>
                     <div className="flex items-center justify-start gap-2 text-[14px] text-gray-500">
-                        <span className="flex  gap-1"><MapPin className="size-4" /> Gdańsk</span>
+                        <span className="flex  gap-1"><MapPin className="size-4" /> {job.location || 'Gdańsk'}</span>
                         <span className="bg-gray-500 w-1 h-1 rounded-full"></span>
-                        <span>10k-12k zł/miesiąc</span>
+                        <span>{salary}</span>
                     </div>
                 </div>
 
@@ -158,13 +191,13 @@ export const Application = ({ setMode }) => {
 
             <div className="flex text-gray-500 items-center justify-center text-sm gap-4">
 
-                <p className="w-40">23.11.2025 12:54</p>
+                <p className="w-40">{formattedDate}</p>
             </div>
             <div className={`flex items-center text-md  text-emerald-700 justify-center gap-2`}>
                 <CircleCheckBig className="size-5" />
-                <p>Aktywne</p>
+                <p>{status === 'applied' ? 'Złożona' : status}</p>
             </div>
-            <button onClick={() => setMode("allCandidatesInOffer")} className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Szczegóły</button>
+            <button onClick={() => setMode && setMode("allCandidatesInOffer")} className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Szczegóły</button>
 
         </div>
     )
@@ -173,13 +206,21 @@ export const Application = ({ setMode }) => {
 
 export const Applied = ({ mode, setMode }) => {
 
-    const [type, setType] = useState("not")
+    const [type, setType] = useState("not");
+    const [applications, setApplications] = useState([]);
+
+    useEffect(() => {
+        api.get('/applications/')
+            .then(res => setApplications(res.data))
+            .catch(console.error);
+    }, []);
+
     return (
         <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full">
             <div className="flex items-center w-full gap-10 justify-between ">
                 <h1 className="text-2xl text-slate-800 font-extrabold">
                     Wszystkie aplikowane stanowiska
-                    <span className="text-gray-500">(10)</span>
+                    <span className="text-gray-500">({applications.length})</span>
                 </h1>
                 <div className="flex items-center justify-center gap-3">
                     <span className=" text-sm">Satus oferty: </span>
@@ -205,16 +246,9 @@ export const Applied = ({ mode, setMode }) => {
                     <p>AKCJA</p>
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-
-
-
+                    {applications.map(app => (
+                        <Application key={app.id} setMode={setMode} data={app} />
+                    ))}
                     <Pagination />
                 </div>
 
@@ -229,12 +263,20 @@ export const Applied = ({ mode, setMode }) => {
 export const Saved = ({ mode, setMode }) => {
 
     const [type, setType] = useState("not")
+    const [savedJobs, setSavedJobs] = useState([]);
+
+    useEffect(() => {
+        api.get('/jobs/saved/')
+            .then(res => setSavedJobs(res.data))
+            .catch(console.error);
+    }, []);
+
     return (
         <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full">
             <div className="flex items-center w-full gap-10 justify-between ">
                 <h1 className="text-2xl text-slate-800 font-extrabold">
                     Zapisane oferty
-                    <span className="text-gray-500">(34)</span>
+                    <span className="text-gray-500">({savedJobs.length})</span>
                 </h1>
                 <div className="flex items-center justify-center gap-3">
                     <span className=" text-sm">Satus oferty: </span>
@@ -254,18 +296,9 @@ export const Saved = ({ mode, setMode }) => {
             </div>
             <div className="flex flex-col flex-1 min-h-0 gap-2">
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-                    <SavedApplication setMode={setMode} />
-
-
-
+                    {savedJobs.map(job => (
+                        <SavedApplication key={job.id} setMode={setMode} job={job} />
+                    ))}
                     <Pagination />
                 </div>
 
@@ -276,30 +309,34 @@ export const Saved = ({ mode, setMode }) => {
 
 
 
-export const SavedApplication = ({ setMode }) => {
+export const SavedApplication = ({ setMode, job }) => {
+    if (!job) return null;
+    const salary = job.salary_min ? (job.salary_max ? `${job.salary_min}-${job.salary_max}` : `Od ${job.salary_min}`) : "Do negocjacji";
 
     return (
         <div className="flex items-center justify-between  py-4 px-5 border-b border-gray-300">
             <div className="flex gap-3 flex-row justify-between w-full items-center pr-5">
                 <div className="flex items-center justify-center gap-3">
-                    <div className="bg-pink-900 rounded-md h-15 w-15"></div>
+                    <div className="bg-pink-900 rounded-md h-15 w-15">
+                        {job.image && <img src={job.image} alt="Logo" className="w-full h-full object-cover rounded-md" />}
+                    </div>
                     <div className="flex flex-col gap-1">
                         <div className="flex flex-row gap-2 items-center justify-start">
-                            <h1>UI/UX Designer</h1>
-                            <span className="text-[14px] bg-purple-50 text-purple-950 rounded-xl px-2 py-1">Zdalna</span>
+                            <h1>{job.title}</h1>
+                            <span className="text-[14px] bg-purple-50 text-purple-950 rounded-xl px-2 py-1">{job.job_type || 'Zdalna'}</span>
                         </div>
                         <div className="flex items-center justify-start gap-2 text-[14px] text-gray-500">
-                            <span className="flex  gap-1"><MapPin className="size-4" /> Gdańsk</span>
+                            <span className="flex  gap-1"><MapPin className="size-4" /> {job.location || 'Polska'}</span>
                             <span className="bg-gray-500 w-1 h-1 rounded-full"></span>
-                            <span>10k-12k zł/miesiąc</span>
+                            <span>{salary}</span>
 
-                            <span className="flex  gap-1 "><Calendar className="size-4" />Pozostało 10 dni</span>
+                            <span className="flex  gap-1 "><Calendar className="size-4" />Wygasa: {new Date(job.expires_at).toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
 
                 <button className="cursor-pointer hover:scale-105">
-                    <Bookmark className="text-amber-400" />
+                    <Bookmark className="text-amber-400 fill-amber-400" />
                 </button>
             </div>
             <button onClick={() => setMode("allCandidatesInOffer")} className="text-sm bg-purple-800 mt-2 flex items-center gap-2 justify-center text-white px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Aplikuj</button>

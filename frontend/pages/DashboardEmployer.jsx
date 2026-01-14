@@ -4,10 +4,14 @@ import { NavbarEmployer } from '../src/components/Navbar';
 import { AllCandidateInOffer, AppliedOffers, MainDashboard } from "../src/components/DashboardsForEmployer";
 import { NewJob } from "../src/components/NewJob";
 import { useState, useEffect } from "react";
+import { SearchJobs, SearchCandidates, Notifications } from "../src/components/EmployerFeatures";
+import { JobsList } from "../src/components/JobsList"
 
 export const DashboardEmployer = () => {
 
     const [mode, setMode] = useState("main");
+
+    const [selectedJobId, setSelectedJobId] = useState(null);
 
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -18,6 +22,11 @@ export const DashboardEmployer = () => {
     useEffect(() => {
         fetchProfileData();
     }, []);
+
+    const handleJobSelect = (id) => {
+        setSelectedJobId(id);
+        setMode("job_details");
+    };
 
     const fetchProfileData = async () => {
         try {
@@ -94,6 +103,9 @@ export const DashboardEmployer = () => {
                 {mode === "newjob" && <NewJob />}
                 {mode === "alljob" && <AppliedOffers mode={mode} setMode={setMode} />}
                 {mode === "allCandidatesInOffer" && <AllCandidateInOffer />}
+                {mode === "search_jobs" && <SearchJobs />}
+                {mode === "search_candidates" && <SearchCandidates />}
+                {mode === "notifications" && <Notifications />}
             </div>
         </div>
     )

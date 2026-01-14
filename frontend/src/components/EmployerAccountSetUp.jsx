@@ -5,12 +5,13 @@ import { Link, Mail, MapPin } from "lucide-react";
 
 export const BasicInformation = ({ formData, updateFormData }) => {
 
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [banerPreview, setBanerPreview] = useState(null);
+
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         updateFormData('logo', file)
-
         const reader = new FileReader();
         reader.onload = () => {
             updateFormData('logoPreview', reader.result);
@@ -56,6 +57,7 @@ export const BasicInformation = ({ formData, updateFormData }) => {
                     <div className="flex-1 flex items-center">
                         <label htmlFor="dropzone-baner" className="flex text-center flex-col  items-center justify-center px-3 w-full h-4/5 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                             {!formData.banerPreview ? (
+
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                     <svg className="w-8 h-8 mb-4 text-gray-500 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
@@ -65,6 +67,7 @@ export const BasicInformation = ({ formData, updateFormData }) => {
                                 </div>
                             ) : (
                                 <img src={formData.banerPreview} alt="Baner" className="w-full h-4/5 object-contain" />
+
                             )}
                             <input id="dropzone-baner" type="file" accept="image/jpeg, image/png, image/svg, image/jpg" onChange={handleBanerUpload} className="hidden" />
                         </label>
@@ -77,11 +80,12 @@ export const BasicInformation = ({ formData, updateFormData }) => {
                     <div className="relative w-full text-sm mt-5">
                         <h1 className="text-sm  absolute pb-2 left-2 -top-6">Nazwa firmy</h1>
                         <input
-                            name="text"
+                            name="company_name"
                             type="text"
                             placeholder=""
                             value={formData.companyName}
                             onChange={(e) => updateFormData('companyName', e.target.value)}
+
                             className="w-full border border-gray-300 rounded-sm py-3   focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                         />
                     </div>
@@ -129,6 +133,7 @@ export const AboutEmployer = ({ formData, updateFormData }) => {
                             value="GameDev"
                             className="cursor-pointer text-gray-500 hover:text-white tracking-wide"
                         >GameDev</option>
+
                     </select>
                 </div>
 
@@ -161,11 +166,14 @@ export const AboutEmployer = ({ formData, updateFormData }) => {
                             value="1000+"
                             className="cursor-pointer text-gray-500 hover:text-white tracking-wide"
                         >1000+ osób</option>
+
                     </select>
                 </div>
 
                 <div style={{ width: "32%" }}>
+
                     <MyDatePicker date={formData.foundingDate} setDate={(newDate) => updateFormData('foundingDate', newDate)} text={'Data utworzenia'} />
+
                 </div>
             </div>
 
@@ -173,11 +181,11 @@ export const AboutEmployer = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Strona internetowa</span>
                     <input
-                        value={formData.website}
                         onChange={(e) => updateFormData('website', e.target.value)}
-                        name="text"
+                        name="website"
                         type="text"
                         placeholder=""
+                        value={formData.website || ""}
                         className="w-full border border-gray-300 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <Link className="absolute left-2 top-3 text-purple-800" />
@@ -205,10 +213,10 @@ export const ContactInformation = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Lokalizacja</span>
                     <input
-                        name="text"
+                        name="location"
                         type="text"
                         placeholder=""
-                        value={formData.location}
+                        value={formData.location || ""}
                         onChange={(e) => updateFormData('location', e.target.value)}
                         className="w-full border border-gray-300 top-2 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
@@ -219,15 +227,14 @@ export const ContactInformation = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Numer telefonu</span>
                     <input
-                        name="phone"
+                        name="phone_number"
                         type="tel"
                         placeholder=""
                         pattern="[0-9]*"
                         inputMode="numeric"
                         value={formData.phoneNumber}
                         onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                        className="w-full border border-gray-300 rounded-sm py-3 pl-15 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
-                    />
+                        className="w-full border border-gray-300 top-2 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2" />
                     <span className="absolute left-3 top-3 text-sm "> +48 </span>
                     <div className="border-r absolute left-12 top-1.5 border-gray-300 h-3/4  mb-1"></div>
                 </div>

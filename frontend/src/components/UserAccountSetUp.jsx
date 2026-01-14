@@ -4,12 +4,6 @@ import MyDatePicker from "./DatePicker";
 import { countries } from "countries-list";
 import { Github, Link, Linkedin, Mail, MapPin } from "lucide-react";
 
-const countryArray = Object.entries(countries).map(([code, data]) => ({
-    code,
-    name: data.native || data.name,
-}));
-
-
 export const countriesPl = [
     { code: "AF", name: "Afganistan" },
     { code: "AL", name: "Albania" },
@@ -213,24 +207,26 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                     <div className="relative flex-1"><span className="absolute left-2 -top-6 text-sm">Wyksztalcenie</span>
                         <select
                             value={formData.education}
+
                             onChange={(e) => updateFormData('education', e.target.value)}
                             className="w-full px-2 py-3 border tracking-wide bg-transparent text-gray-500 rounded-sm border-gray-300 text-sm focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer cursor-pointer"
                         >
                             <option value="">Wykształcenie</option>
-                            <option value="p">Podstawowe</option>
-                            <option value="s">Średnie</option>
-                            <option value="w">Wyższe</option>
+                            <option value="Podstawowe">Podstawowe</option>
+                            <option value="Średnie">Średnie</option>
+                            <option value="Wyższe">Wyższe</option>
                         </select></div>
                 </div>
                 <div className="flex flex-1 items-center justify-center ">
                     <div className="relative w-full text-sm">
                         <span className="absolute left-2 -top-6 text-sm">Doświadzcenie (liczba lat ogółem)</span>
                         <input
-                            name="text"
+                            name="experience_years"
                             type="number"
                             placeholder=""
                             value={formData.expirience}
                             onChange={(e) => updateFormData('expirience', e.target.value)}
+
                             className="w-full border border-gray-300 rounded-sm py-3  focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-3"
                         />
                     </div>
@@ -240,11 +236,12 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Strona internetowa (opcjonalne)</span>
                     <input
-                        name="text"
+                        name="website"
                         type="text"
                         placeholder=""
                         value={formData.web}
                         onChange={(e) => updateFormData('web', e.target.value)}
+
                         className="w-full border border-gray-300 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <Link className="absolute left-2 top-3 text-purple-800" />
@@ -254,11 +251,12 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Strona GitHub (opcjonalne)</span>
                     <input
-                        name="text"
+                        name="github_link"
                         type="text"
                         placeholder=""
                         value={formData.github}
                         onChange={(e) => updateFormData('github', e.target.value)}
+
                         className="w-full border border-gray-300 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <Github className="absolute left-2 top-3 text-purple-800" />
@@ -268,11 +266,12 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">LinkedIn (opcjonalne)</span>
                     <input
-                        name="text"
+                        name="linkedin_link"
                         type="text"
                         placeholder=""
                         value={formData.linkedin}
                         onChange={(e) => updateFormData('linkedin', e.target.value)}
+
                         className="w-full border border-gray-300 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <Linkedin className="absolute left-2 top-3 text-purple-800" />
@@ -282,6 +281,7 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                 <span className="absolute left-2 -top-6 text-sm">Narodowość</span>
                 <select
                     value={formData.nationality}
+
                     onChange={(e) => updateFormData('nationality', e.target.value)}
                     className="flex-1 px-2 py-3 border tracking-wide bg-transparent text-gray-500 rounded-sm border-gray-300  text-sm  focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer  cursor-pointer"
                 >
@@ -294,12 +294,14 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                 </select>
                 <div style={{ width: "32%" }}>
                     <MyDatePicker text={'Data urodzenia'} date={formData.birthday} setDate={(newDate) => updateFormData('birthday', newDate)} />
+
                 </div>
             </div>
             <div className="flex items-center justify-between w-full gap-4">
                 <div className="relative flex-1"><span className="absolute left-2 -top-6 text-sm">Plec</span>
                     <select
                         value={formData.gender}
+
                         onChange={(e) => updateFormData('gender', e.target.value)}
                         className="w-full px-2 py-3 border tracking-wide bg-transparent text-gray-500 rounded-sm border-gray-300 text-sm focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer cursor-pointer"
                     >
@@ -307,6 +309,7 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
                         <option value="M">Mężczyzna</option>
                         <option value="K">Kobieta</option>
                         <option value="N">Nie chcę podawać</option>
+
                     </select></div>
                 <div className="relative flex-1">
                     <span className="absolute left-2 -top-6 text-sm">Stan cywilny</span>
@@ -327,6 +330,7 @@ export const BasicInformationUser = ({ formData, updateFormData }) => {
             <div className="w-full relative mt-3">
                 <h1 className="text-sm pb-2 absolute left-2 -top-6">O sobie</h1>
                 <Editor onChange={(html) => updateFormData('description', html)} value={formData.description} placeholder="Opisz siebie..." />
+
             </div>
         </div>
     )
@@ -339,6 +343,7 @@ export const CVUser = ({ formData, updateFormData }) => {
         if (!file) return;
 
         updateFormData('photo', file);
+
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -354,7 +359,9 @@ export const CVUser = ({ formData, updateFormData }) => {
         updateFormData('cv', file);
 
         if (file.type === "application/pdf") {
+
             updateFormData('cvPreview', "PDF")
+
             return;
         }
 
@@ -375,6 +382,7 @@ export const CVUser = ({ formData, updateFormData }) => {
                         <span className="absolute left-2 -top-3 text-sm">Zdjęcie</span>
                         <label className="flex w-60 h-60 mt-4 text-center flex-col  items-center justify-center px-3 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                             {!formData.photoPreview ? (
+
                                 <div className="flex flex-col items-center justify-center px-3 py-5  aspect-square">
                                     <svg className="w-8 h-8 mb-4 text-gray-500 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
@@ -383,6 +391,7 @@ export const CVUser = ({ formData, updateFormData }) => {
                                     <p className="text-xs text-gray-500 "> PNG, JPEG or JPG  </p>
                                 </div>
                             ) : (
+
                                 <img src={formData.photoPreview} alt="Photo" className="w-full h-4/5 object-contain" />
                             )}
                             <input id="dropzone-photo" type="file" onChange={handlePhotoUpload} accept="image/jpeg, image/png, image/svg, image/jpg" className="hidden" />
@@ -393,6 +402,7 @@ export const CVUser = ({ formData, updateFormData }) => {
                         <span className="absolute left-2 -top-3 text-sm">CV</span>
                         <label className="flex mt-4 w-60 h-60 text-center flex-col  items-center justify-center px-3 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                             {!formData.cvPreview ? (
+
                                 <div className="flex flex-col items-center justify-center px-3 py-5  aspect-square">
                                     <svg className="w-8 h-8 mb-4 text-gray-500 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
@@ -426,11 +436,12 @@ export const ContactInformationUser = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Lokalizacja</span>
                     <input
-                        name="text"
+                        name="location"
                         type="text"
                         placeholder=""
                         value={formData.localization}
                         onChange={(e) => updateFormData('localization', e.target.value)}
+
                         className="w-full border border-gray-300 top-2 rounded-sm py-3 pl-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <MapPin className="absolute left-2 top-3 text-purple-800" />
@@ -440,13 +451,14 @@ export const ContactInformationUser = ({ formData, updateFormData }) => {
                 <div className="relative w-full text-sm">
                     <span className="absolute left-2 -top-6 text-sm">Numer telefonu</span>
                     <input
-                        name="phone"
+                        name="phone_number"
                         type="tel"
                         placeholder=""
                         pattern="[0-9]*"
                         inputMode="numeric"
                         value={formData.phone}
                         onChange={(e) => updateFormData('phone', e.target.value)}
+
                         className="w-full border border-gray-300 rounded-sm py-3 pl-15 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                     />
                     <span className="absolute left-3 top-3 text-sm "> +48 </span>

@@ -1,12 +1,12 @@
-import React from "react";
-import { useState } from "react";
-import { ArrowBigRight } from 'lucide-react';
+import React, { useState } from "react";
+import { ArrowBigRight, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 export const SignIn = ({ onSwitch }) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
 
     const navigate = useNavigate();
@@ -23,9 +23,7 @@ export const SignIn = ({ onSwitch }) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: email, // Django defaults to username, but we use email as username in registration often. If username != email, this needs adjustment. 
-                    // Assuming for now username=email based on RegisterForm logic "user.username = user.username.lower()" which usually comes from email or specific field. 
-                    // Let's try sending 'username': email first as standard DRF behavior.
+                    username: email.toLowerCase(),
                     password: password
                 }),
             });
@@ -92,11 +90,11 @@ export const SignIn = ({ onSwitch }) => {
                         <div className="relative w-full text-sm">
                             <input
                                 name="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder=""
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full border border-gray-300 rounded-sm py-1.5   focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
+                                className="w-full border border-gray-300 rounded-sm py-1.5 pr-10 focus:border-b-2 focus:border-purple-600 transition-colors focus:outline-none peer bg-inherit px-2"
                             />
                             <label
                                 htmlFor="username"
@@ -104,6 +102,13 @@ export const SignIn = ({ onSwitch }) => {
                             >
                                 Hasło
                             </label>
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 top-1.5 text-gray-400 hover:text-purple-700 transition-colors focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -136,4 +141,4 @@ export const SignIn = ({ onSwitch }) => {
             </div>
         </form>
     )
-} 
+}

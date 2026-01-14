@@ -8,7 +8,7 @@ from .views import ProfileView, CategoryViewSet, JobViewSet, ApplicationViewSet,
 router = routers.DefaultRouter()
 router.register(r'categories', CategoryViewSet)
 router.register(r'jobs', JobViewSet)
-router.register(r'applications', ApplicationViewSet)
+router.register(r'applications', ApplicationViewSet, basename='application')
 router.register(r'users', UserViewSet)
 
 

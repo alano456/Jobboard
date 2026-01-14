@@ -51,6 +51,7 @@ class Profile(models.Model):
     birth_date = models.DateField(null=True, blank=True, verbose_name="Data urodzenia")
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, verbose_name="Płeć")
     bio = models.TextField(blank=True, verbose_name="O sobie")
+    marital_status = models.CharField(max_length=50, blank=True, verbose_name="Stan cywilny")
 
     # --- Sekcja Firmy (Pracodawcy) ---
     # Imię/Nazwisko/Email są w modelu User, ale tutaj dane typowo firmowe

@@ -18,13 +18,13 @@ export const NavbarEmployer = ({ setMode }) => {
             </div>
 
             <div className="flex items-center justify-center lg:gap-24 md:gap-12 sm:gap-6 text-sm font-medium text-gray-600">
-                <button className="cursor-pointer">Szukaj pracy</button>
-                <button className="cursor-pointer">Szukaj pracownika</button>
-                <button className="cursor-pointer">Panel główny</button>
+                <button onClick={() => setMode("search_jobs")} className="cursor-pointer hover:text-purple-800 transition-colors">Szukaj pracy</button>
+                <button onClick={() => setMode("search_candidates")} className="cursor-pointer hover:text-purple-800 transition-colors">Szukaj pracownika</button>
+                <button onClick={() => setMode("main")} className="cursor-pointer hover:text-purple-800 transition-colors">Panel główny</button>
             </div>
 
             <div className="flex items-center justify-center gap-6">
-                <div className="relative cursor-pointer ">
+                <div onClick={() => setMode("notifications")} className="relative cursor-pointer ">
                     <Bell className="hover:rotate-12 transition-transform duration-300 ease-in-out" />
                     <div className="bg-pink-600 w-3 h-3 rounded-full absolute top-0 -right-0.5"></div>
                 </div>
