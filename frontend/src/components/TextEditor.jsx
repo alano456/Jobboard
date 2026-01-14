@@ -241,7 +241,7 @@ function onError(error) {
     console.error(error);
 }
 
-export default function Editor({ setDescription, text }) {
+export default function Editor({ onChange, value, placeholder = "Napisz coś o sobie..." }) {
 
     const initialConfig = {
         namespace: 'MyEditor',
@@ -263,8 +263,8 @@ export default function Editor({ setDescription, text }) {
                 <ListPlugin />
                 <RichTextPlugin
                     placeholder={
-                        <div className="text-gray-400 pointer-events-none absolute top-10 left-[9px] font-extralight ">
-                            {text}
+                        <div className="text-gray-400 pointer-events-none w-full absolute top-10 left-[9px] font-extralight ">
+                            <Placeholder placeholder={placeholder} />
                         </div>
                     }
                     contentEditable={
@@ -279,7 +279,7 @@ export default function Editor({ setDescription, text }) {
                     onChange={(editorState, editor) => {
                         editorState.read(() => {
                             const html = $generateHtmlFromNodes(editor);
-                            setDescription(html);
+                            onChange(html);
                         });
                     }}
                 />
@@ -290,6 +290,14 @@ export default function Editor({ setDescription, text }) {
     );
 }
 
+
+function Placeholder({ placeholder }) {
+    return (
+        <div className="absolute pointer-events-none select-none">
+            {placeholder}
+        </div>
+    )
+}
 
 const exampleTheme = {
     paragraph: 'text-md',

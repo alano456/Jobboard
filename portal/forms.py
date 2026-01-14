@@ -5,12 +5,14 @@ from .models import Job, EmployerRecommendation, Application
 
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(required=True, label="Email")
+    first_name = forms.CharField(max_length=30, required=True, label="Imię" )
+    last_name = forms.CharField(max_length=30, required=True, label="Nazwisko")
     is_employer = forms.BooleanField(required=False, label="Jestem pracodawcą")
     company_name = forms.CharField(max_length=200, required=False, label="Nazwa firmy (jeśli pracodawca)")
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2', 'is_employer', 'company_name']
+        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2', 'is_employer', 'company_name']
 
 class JobForm(forms.ModelForm):
     class Meta:

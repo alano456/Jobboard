@@ -8,16 +8,104 @@ import { useActionData } from "react-router-dom";
 
 export const MainDashboard = () => {
 
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [jobsData, setJobsData] = useState([]);
+
+    useEffect(() => {
+        fetchProfileData();
+        fetchMyJobs()
+    }, []);
+
+    const fetchProfileData = async () => {
+        try {
+
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                setError("No token found");
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('http://localhost:8000/api/profiles/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Profile: ", data);
+
+            setProfileData(data);
+            setLoading(false);
+
+        } catch (error) {
+            setError(error.message);
+            setLoading(false);
+        }
+    };
+
+
+    const fetchMyJobs = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await fetch("http://localhost:8000/api/jobs/my/", {
+                headers: {
+                    Authorization: `Token ${token}`,
+                },
+            });
+
+            const data = await response.json();
+            setJobsData(data);
+            console.log("My jobs:", data);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="w-screen h-screen bg-white relative flex justify-center items-center">
+                <div className="flex gap-x-2">
+                    <div
+                        className="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"
+                    ></div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return <div className="">Error : {error}</div>
+    }
+
     return (
         <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full">
             <div className="flex gap-1 items-start flex-col">
-                <h1 className="text-2xl text-slate-800 font-extrabold">Witaj, Imie Nazwisko</h1>
+                <h1 className="text-2xl text-slate-800 font-extrabold">Witaj, {profileData.user.first_name} {profileData.user.last_name}</h1>
                 <p className="text-md text-gray-500">Oto twoje dzienne aktywności</p>
             </div>
             <div className="flex items-center justify-start flex-row gap-5">
                 <div className="bg-indigo-100 rounded-md px-4 py-5 flex gap-5 items-center w-80 justify-between">
                     <div className="flex gap-1 flex-col">
-                        <h1 className="text-2xl text-slate-800 font-semibold">10</h1>
+                        <h1 className="text-2xl text-slate-800 font-semibold">{jobsData.length}</h1>
                         <p className="text-[14px]">Opublikowanych ogłoszeń</p>
                     </div>
                     <div className="bg-white p-4 rounded-sm">
@@ -47,12 +135,10 @@ export const MainDashboard = () => {
                     <p>AKCJE</p>
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
-                    <Application />
+                    {jobsData.map((job => (
+                        <Application key={job.id} job={job} />
+                    )))
+                    }
                 </div>
 
             </div>
@@ -60,21 +146,43 @@ export const MainDashboard = () => {
     )
 }
 
-export const Application = ({ setMode }) => {
+export const Application = ({ setMode, job }) => {
+
+
+    const isExpired = new Date(job.expires_at) < new Date();
+
+    const daysLeft = (expiresAt) => {
+        if (!expiresAt) return null; // если даты нет
+        const now = new Date();
+        const expiryDate = new Date(expiresAt);
+
+        // разница в миллисекундах
+        const diffMs = expiryDate - now;
+
+        // если уже истекло
+        if (diffMs <= 0) return 0;
+
+        // переводим миллисекунды в дни
+        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    };
+
+    const leftDays = daysLeft(job.expires_at);
+
+
 
     return (
         <div className="grid grid-cols-[2fr_1fr_2fr_1.4fr] items-center py-4 px-5 border-b border-gray-300">
             <div className="flex gap-1 flex-col">
-                <h1>UI/UX Designer</h1>
+                <h1>{job.title}</h1>
                 <div className="flex items-center justify-start gap-2 text-[14px] text-gray-500">
-                    <span>Pełen etat</span>
+                    <span>{job.job_type}</span>
                     <span className="bg-gray-500 w-1 h-1 rounded-full"></span>
-                    <span>pozostało 10 dni</span>
+                    <span> {leftDays > 0 && <p>pozostało {leftDays} dni</p>}</span>
                 </div>
             </div>
             <div className={`flex items-center text-md  text-emerald-700 justify-center gap-2`}>
                 <CircleCheckBig className="size-5" />
-                <p>Aktywne</p>
+                <p>{isExpired ? "Wygasła" : "Aktywna"}</p>
             </div>
             <div className="flex text-gray-500 items-center justify-center text-sm gap-4">
                 <Users className="size-5" />
@@ -88,6 +196,30 @@ export const Application = ({ setMode }) => {
 
 
 export const AppliedOffers = ({ mode, setMode }) => {
+
+    const [jobsData, setJobsData] = useState([]);
+
+    useEffect(() => {
+        fetchMyJobs()
+    }, []);
+
+    const fetchMyJobs = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await fetch("http://localhost:8000/api/jobs/my/", {
+                headers: {
+                    Authorization: `Token ${token}`,
+                },
+            });
+
+            const data = await response.json();
+            setJobsData(data);
+            console.log("My jobs:", data);
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
     const [type, setType] = useState("not")
     return (
@@ -121,16 +253,11 @@ export const AppliedOffers = ({ mode, setMode }) => {
                     <p>AKCJE</p>
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
-                    <Application setMode={setMode} />
 
-
-
+                    {jobsData.map((job => (
+                        <Application setMode={setMode} key={job.id} job={job} />
+                    )))
+                    }
                     <Pagination />
                 </div>
 

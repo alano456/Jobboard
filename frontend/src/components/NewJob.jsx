@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { ArrowBigRight, X } from "lucide-react";
+import MyDatePicker from "./DatePicker";
 import api from "../api";
 import MultiSelect from "./DashboardsForEmployer"; // Importing existing MultiSelect if kept there, or need to verify import
+import Editor from "./TextEditor";
 
 // Inline MultiSelect definition if original export is tricky without major refactor, 
 // OR simpler: we assume we can import it or replace it. 
@@ -18,13 +20,25 @@ export const NewJob = () => {
     const [salaryMin, setSalaryMin] = useState("");
     const [salaryMax, setSalaryMax] = useState("");
     const [contractType, setContractType] = useState("uop");
+    const [location, setLocation] = useState("");
 
     // Dates (keeping simple text or native date inputs for now to match backend 'YYYY-MM-DD')
-    const [startDate, setStartDate] = useState(""); // YYYY-MM-DD
+    const [startDate, setStartDate] = useState(null); // YYYY-MM-DD
     const [expireDate, setExpireDate] = useState(""); // YYYY-MM-DD
 
     const [description, setDescription] = useState("")
-    const [category, setCategory] = useState(1); // Default category (IT) - should fetch from API ideally
+    const [responsibilities, setResponsibilities] = useState("")
+    const [category, setCategory] = useState(''); // Default category (IT) - should fetch from API ideally
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        fetch('http://localhost:8000/api/categories/')
+            .then(res => res.json())
+            .then(data => setCategories(data))
+            .catch(err => console.error(err.response?.data))
+
+    }, []);
+
 
     const [showApplied, setShowApplied] = useState(false)
     const [loading, setLoading] = useState(false);
@@ -41,14 +55,16 @@ export const NewJob = () => {
         const payload = {
             title: title,
             description: description,
-            category: category,
+            responsibilities: responsibilities,
+            category: Number(category),
             salary_min: salaryMin || null,
             salary_max: salaryMax || null,
+            start_date: startDate ? new Date(startDate).toISOString().split("T")[0] : null,
             job_type: workMode, // mapping to model choices
             experience_required: experience,
             contract_type: contractType,
             // Assuming location is manual or derived, let's just send 'Polska' for now or add input
-            location: "Polska",
+            location: location,
             expires_at: expireDate ? new Date(expireDate).toISOString() : null
         };
 
@@ -60,6 +76,11 @@ export const NewJob = () => {
             setDescription("");
             setSalaryMin("");
             setSalaryMax("");
+            setDescription("");
+            setResponsibilities("");
+            setStartDate(null);
+            setExpireDate(null);
+
         } catch (err) {
             console.error(err);
             setError("Błąd podczas publikowania. Sprawdź dane (np. czy jesteś zalogowany jako pracodawca).");
@@ -68,19 +89,39 @@ export const NewJob = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <div className="w-screen h-screen bg-white relative flex justify-center items-center">
+                <div className="flex gap-x-2">
+                    <div
+                        className="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"
+                    ></div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return <div className="flex items-center justify-center w-full h-full">Error : {error}</div>
+    }
+
     return (
         <div className="flex flex-col px-10 h-full overflow-y-auto items-start justify-start py-7 gap-8 min-h-0 bg-white">
             <h1 className="text-2xl text-slate-800 font-extrabold">Opublikuj ogłoszenie</h1>
 
-            {error && <div className="w-full bg-red-100 text-red-800 p-4 rounded-md">{error}</div>}
 
             <div className="flex w-full items-start justify-center flex-col gap-9">
                 <h1 className="text-xl text-slate-800 font-extrabold pb-1">Podstawowe informacje</h1>
 
-                {/* TITLE */}
                 <div className="flex w-full items-center justify-center ">
                     <div className="relative w-full text-sm">
-                        <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Nazwa stanowiska</span>
+                        <span className="absolute left-2 -top-6 text-sm">Nazwa stanowiska</span>
                         <input
                             type="text"
                             value={title}
@@ -92,10 +133,9 @@ export const NewJob = () => {
                 </div>
 
                 <div className="flex flex-row gap-5 w-full">
-                    {/* WORK MODE */}
                     <div className="flex flex-1 ">
                         <div className="relative flex-1">
-                            <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Tryb pracy</span>
+                            <span className="absolute left-2 -top-6 text-sm ">Tryb pracy</span>
                             <select
                                 value={workMode}
                                 onChange={(e) => setWorkMode(e.target.value)}
@@ -108,10 +148,9 @@ export const NewJob = () => {
                         </div>
                     </div>
 
-                    {/* EXPERIENCE */}
                     <div className="flex flex-1 ">
                         <div className="relative flex-1">
-                            <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Doświadczenie</span>
+                            <span className="absolute left-2 -top-6 text-sm">Doświadczenie</span>
                             <select
                                 value={experience}
                                 onChange={(e) => setExperience(e.target.value)}
@@ -124,15 +163,31 @@ export const NewJob = () => {
                             </select>
                         </div>
                     </div>
+
+                    <div className="flex flex-1 ">
+                        <div className="relative flex-1">
+                            <span className="absolute left-2 -top-6 text-sm">Kategoria</span>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full h-12 border border-gray-300 rounded-sm px-2 focus:border-b-2 focus:border-purple-600 outline-none bg-white"
+                            >
+                                <option value="none">Nie wymagane</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            {/* SALARY */}
             <div className="flex items-start justify-start w-full gap-9 flex-col">
                 <h1 className="text-xl text-slate-800 font-extrabold">Warunki zatrudnienia</h1>
                 <div className="flex w-full items-row items-center justify-between gap-5">
                     <div className="relative flex-1">
-                        <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Rodzaj umowy</span>
+                        <span className="absolute left-2 -top-6 text-sm">Rodzaj umowy</span>
                         <select
                             value={contractType}
                             onChange={(e) => setContractType(e.target.value)}
@@ -148,7 +203,7 @@ export const NewJob = () => {
 
                     <div className="flex flex-1 w-full items-center justify-center ">
                         <div className="relative w-full text-sm">
-                            <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Min. (PLN)</span>
+                            <span className="absolute left-2 -top-6 text-sm">Min. (PLN)</span>
                             <input
                                 type="number"
                                 value={salaryMin}
@@ -159,7 +214,7 @@ export const NewJob = () => {
                     </div>
                     <div className="flex flex-1 w-full items-center justify-center ">
                         <div className="relative w-full text-sm">
-                            <span className="absolute left-2 -top-6 text-sm font-bold text-gray-500">Max. (PLN)</span>
+                            <span className="absolute left-2 -top-6 text-sm">Max. (PLN)</span>
                             <input
                                 type="number"
                                 value={salaryMax}
@@ -171,17 +226,33 @@ export const NewJob = () => {
                 </div>
             </div>
 
-            {/* DESCRIPTION */}
             <div className="flex items-start justify-start w-full gap-9 flex-col">
-                <h1 className="text-xl text-slate-800 font-extrabold">Opis stanowiska</h1>
-                <div className="w-full relative">
-                    <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full h-40 border border-gray-300 rounded-sm p-3 focus:border-b-2 focus:border-purple-600 outline-none resize-none"
-                        placeholder="Opisz wymagania, obowiązki i ofertę..."
-                    />
+                <h1 className="text-xl text-slate-800 pt-2 font-extrabold">Dodatkowe informacje</h1>
+                <div className="flex w-full items-row items-center justify-between gap-5">
+                    <div className="flex-1">
+                        <MyDatePicker text={'Data początkowa'} date={startDate} setDate={setStartDate} />
+                    </div>
+                    <div className="flex-1">
+                        <MyDatePicker text={'Data wygaśnięcia ogłoszenia'} date={expireDate} setDate={setExpireDate} />
+                    </div>
+                    <div className="relative flex-1 text-sm">
+                        <span className="absolute left-2 -top-6 text-sm">Lokalizacja</span>
+                        <input
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="w-full h-12 border border-gray-300 rounded-sm px-3 focus:border-b-2 focus:border-purple-600 outline-none"
+                        />
+                    </div>
                 </div>
+            </div>
+
+            <div className="flex items-start justify-start w-full gap-3 flex-col">
+                <h1 className="text-xl text-slate-800 pt-2 font-extrabold">Opis stanowiska</h1>
+                <h1 className="text-sm pl-2 ">Opis</h1>
+                <Editor onChange={setDescription} value={description} placeholder="Opisz stanowisko..." />
+                <h1 className="text-sm pl-2 pt-2 ">Obowiązki na podanym stanowisku</h1>
+                <Editor onChange={setResponsibilities} value={responsibilities} placeholder="Opisz obowiązki..." />
             </div>
 
             <button

@@ -45,6 +45,8 @@ export const CreateAccount = ({ onSwitch }) => {
                 email: email,
                 password1: password,
                 password2: repassword,
+                first_name: name,
+                last_name: lastname,
                 is_employer: isEmployer,
                 company_name: isEmployer ? "Nowa Firma" : ""
             };
@@ -80,6 +82,8 @@ export const CreateAccount = ({ onSwitch }) => {
 
                 if (loginResponse.ok) {
                     const loginData = await loginResponse.json();
+                    console.log('Login response data: ', loginData);
+
                     localStorage.setItem('token', loginData.token);
                     localStorage.setItem('user_id', loginData.user_id);
                     localStorage.setItem('is_employer', loginData.is_employer);

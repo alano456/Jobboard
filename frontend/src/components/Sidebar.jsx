@@ -5,6 +5,13 @@ import { useNavigate } from "react-router-dom";
 export const EmployerSidebar = ({ mode, setMode }) => {
     const navigate = useNavigate();
 
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('is_employer');
+        navigate('/')
+    }
+
     return (
         <div className="flex pt-4 items-start flex-col text-gray-500 h-full w-72 border-r bg-white border-gray-300">
             <div className="flex flex-col w-full">
@@ -39,7 +46,7 @@ export const EmployerSidebar = ({ mode, setMode }) => {
                 </div>
             </div>
             <div className="flex mt-auto flex-col w-full">
-                <button onClick={() => navigate('/')} className="ml-4 mb-4 hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row  items-center justify-start gap-3 px-5 py-3 cursor-pointer ">
+                <button onClick={logout} className="ml-4 mb-4 hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row  items-center justify-start gap-3 px-5 py-3 cursor-pointer ">
                     <LogOut />
                     <span>Wyloguj się</span>
                 </button>
@@ -53,6 +60,16 @@ export const EmployerSidebar = ({ mode, setMode }) => {
 
 export const UserSidebar = ({ mode, setMode }) => {
     const navigate = useNavigate();
+
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('is_employer');
+
+        navigate('/')
+
+
+    }
 
     return (
         <div className="flex pt-4 items-start flex-col text-gray-500 h-full w-72 border-r bg-white border-gray-300">
@@ -91,7 +108,7 @@ export const UserSidebar = ({ mode, setMode }) => {
                 </div>
             </div>
             <div className="flex mt-auto flex-col w-full">
-                <button onClick={() => navigate('/')} className="ml-4 mb-4 hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row  items-center justify-start gap-3 px-5 py-3 cursor-pointer ">
+                <button onClick={logout} className="ml-4 mb-4 hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row  items-center justify-start gap-3 px-5 py-3 cursor-pointer ">
                     <LogOut />
                     <span>Wyloguj się</span>
                 </button>
