@@ -2,11 +2,10 @@ from django.urls import path, include
 from . import views
 from django.contrib.auth import views as auth_views
 from rest_framework import routers
-from .views import ProfileViewSet, CategoryViewSet, JobViewSet, ApplicationViewSet, UserViewSet, RegisterView, CustomAuthToken
+from .views import ProfileView, CategoryViewSet, JobViewSet, ApplicationViewSet, UserViewSet, RegisterView, CustomAuthToken
 
 
 router = routers.DefaultRouter()
-router.register(r'profiles', ProfileViewSet)
 router.register(r'categories', CategoryViewSet)
 router.register(r'jobs', JobViewSet)
 router.register(r'applications', ApplicationViewSet)
@@ -16,6 +15,7 @@ router.register(r'users', UserViewSet)
 urlpatterns = [
     path('api/', include(router.urls)),
     path('api/register/', RegisterView.as_view(), name='api_register'),
+    path('api/profiles/', ProfileView.as_view(), name='api_profile'),
     path('api/login/', CustomAuthToken.as_view(), name='api_login'),
 ]
 

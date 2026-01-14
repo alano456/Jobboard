@@ -8,10 +8,77 @@ import { useActionData } from "react-router-dom";
 
 export const MainDashboard = () => {
 
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchProfileData();
+    }, []);
+
+    const fetchProfileData = async () => {
+        try {
+
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                setError("No token found");
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('http://localhost:8000/api/profiles/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Profile: ", data);
+
+            setProfileData(data);
+            setLoading(false);
+
+        } catch (error) {
+            setError(error.message);
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="w-screen h-screen bg-white relative flex justify-center items-center">
+                <div className="flex gap-x-2">
+                    <div
+                        className="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"
+                    ></div>
+                    <div
+                        className="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"
+                    ></div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return <div className="">Error : {error}</div>
+    }
+
     return (
         <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full">
             <div className="flex gap-1 items-start flex-col">
-                <h1 className="text-2xl text-slate-800 font-extrabold">Witaj, Imie Nazwisko</h1>
+                <h1 className="text-2xl text-slate-800 font-extrabold">Witaj, {profileData.user.first_name} {profileData.user.last_name}</h1>
                 <p className="text-md text-gray-500">Oto twoje dzienne aktywności</p>
             </div>
             <div className="flex items-center justify-between flex-row gap-5">

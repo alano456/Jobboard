@@ -67,6 +67,7 @@ class Profile(models.Model):
     def __str__(self):
         type_str = "Pracodawca" if self.is_employer else "Kandydat"
         return f"{self.user.username} ({type_str})"
+    
 class Category(models.Model):
     name = models.CharField(max_length=100)
     def __str__(self):

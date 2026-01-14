@@ -393,6 +393,8 @@ from .models import Job, Category, Application, Profile
 from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
@@ -412,8 +414,10 @@ class CustomAuthToken(ObtainAuthToken):
 #-------------------------------------------
 
 class RegisterView(APIView):
+     
      def get(self, request):
         return Response({"message": "Use POST to register"}, status=200)
+     
      def post(self, request):
         form = RegisterForm(request.data)
 
@@ -432,12 +436,71 @@ class RegisterView(APIView):
         else:
              return Response({"errors": form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+class ProfileView(APIView):
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        profile = Profile.objects.get(user=request.user)
+        serializer=ProfileSerializer(profile)
+        return Response(serializer.data)
+    
+    def post(self, request):
+
+        try:
+            profile = Profile.objects.get(user=request.user)
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+         
+        if request.content_type == 'application/json':
+            data=request.data
+
+            fields = [
+             'location', 'phone_number', 'website', 'education',
+             'experience_years', 'github_link', 'linkedin_link',
+             'nationality', 'birth_date', 'gender', 'bio',
+             "short_description", "company_type", "team_size",
+             "founding_date", "detailed_description",
+             "work_culture"
+            ]
+        
+            for field in fields:
+                if field in data and data[field] is not ['', None]:
+                    setattr(profile, field, data[field])
+
+            file_fields = ['profile_picture', 'cv', 'company_logo', 'company_banner']
+            for file_field in file_fields:
+                 if file_field in request.FILES:
+                    setattr(profile, file_field, request.FILES[file_field])
+
+        else:
+            fields = [
+                'location', 'phone_number', 'website', 'education',
+                'experience_years', 'github_link', 'linkedin_link',
+                'nationality', 'birth_date', 'gender', 'bio',
+                "short_description", "company_type", "team_size",
+                "founding_date", "detailed_description",
+                "work_culture"
+            ]
+            
+            for field in fields:
+                if field in request.data and request.data[field] not in ['', None]:
+                    setattr(profile, field, request.data[field])
+            
+            file_fields = ['profile_picture', 'cv', 'company_logo', 'company_banner']
+            for file_field in file_fields:
+                 if file_field in request.FILES:
+                    setattr(profile, file_field, request.FILES[file_field])
 
 
-class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    permission_classes = [permissions.AllowAny]
+        try:
+            profile.save()
+            serializer = ProfileSerializer(profile)
+            return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('id')
@@ -454,9 +517,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all().order_by('-created_at')
     serializer_class = JobSerializer
-    permission_classes = [permissions.AllowAny]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    # пример фильтрации по категории и поиску
     def get_queryset(self):
         queryset = Job.objects.all()
         category = self.request.query_params.get('category')
@@ -468,14 +531,13 @@ class JobViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        user = self.request.user
-        if not user.is_authenticated:
-            # Fallback for demo/testing: use the first available user
-            user = User.objects.first()
-            if not user:
-                # Should not happen in normal dev env if created via script, but safety check
-                raise serializers.ValidationError({"user": "No users available for assignment."})
-        serializer.save(user=user)
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my_jobs(self, request):
+        jobs = Job.objects.filter(user=request.user)
+        serializer = self.get_serializer(jobs, many=True)
+        return Response(serializer.data)
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):

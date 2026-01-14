@@ -4,6 +4,7 @@ import { AboutEmployer, BasicInformation, ContactInformation } from "../src/comp
 import { useState } from "react";
 import { BasicInformationUser, CVUser, ContactInformationUser } from "../src/components/UserAccountSetUp";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 export const RegisterSetupWrapper = () => {
     const location = useLocation();
@@ -15,8 +16,51 @@ export const RegisterSetupWrapper = () => {
 
 export const RegisterContinue = () => {
 
-    const steps = [<BasicInformation />, <AboutEmployer />, <ContactInformation />];
     const [currentStep, setCurrentStep] = useState(0);
+
+    const [formData, setFormData] = useState({
+        companyName: '',
+        shortDescription: '',
+        detailedDescription: '',
+        workCulture: '',
+        companyType: '',
+        teamSize: '',
+        foundingDate: '',
+
+        logo: null,
+        logoPreview: null,
+        baner: null,
+        banerPreview: null,
+
+        location: '',
+        phoneNumber: '',
+        website: '',
+    })
+
+    const updateFormData = (fieldName, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [fieldName]: value
+        }))
+    }
+
+    const steps = [
+        <BasicInformation
+            key="step1"
+            formData={formData}
+            updateFormData={updateFormData}
+        />,
+        <AboutEmployer
+            key="step2"
+            formData={formData}
+            updateFormData={updateFormData}
+        />,
+        <ContactInformation
+            key="step3"
+            formData={formData}
+            updateFormData={updateFormData}
+        />
+    ]
 
     const navigate = useNavigate();
 
@@ -24,9 +68,59 @@ export const RegisterContinue = () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            navigate('/us-dashboard');
+            updateProfile()
+            navigate('/empl-dashboard');
         }
     };
+
+    const updateProfile = async () => {
+
+
+        try {
+            const token = localStorage.getItem('token');
+            const formDataToSend = new FormData();
+
+            formDataToSend.append('location', formData.location);
+            formDataToSend.append('phone_number', formData.phoneNumber);
+            formDataToSend.append('website', formData.website);
+            formDataToSend.append('company_name', formData.companyName);
+            formDataToSend.append('short_description', formData.shortDescription);
+            formDataToSend.append('work_culture', formData.workCulture);
+            formDataToSend.append('company_type', formData.companyType);
+            formDataToSend.append('team_size', formData.teamSize);
+            formDataToSend.append('founding_date', formData.foundingDate ? new Date(formData.foundingDate).toISOString().split('T')[0] : '');
+            formDataToSend.append('detailed_description', formData.detailedDescription);
+
+
+            if (formData.logo) {
+                formDataToSend.append('company_logo', formData.logo);
+            }
+            if (formData.baner) {
+                formDataToSend.append('company_banner', formData.baner);
+            }
+
+
+            const response = await fetch('http://localhost:8000/api/profiles/',
+                {
+                    method: 'POST',
+                    headers: { 'Authorization': `Token ${token}` },
+                    body: formDataToSend
+                }
+            );
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log("User data updated", result);
+            } else {
+                console.log("Error updating profile")
+            }
+
+        } catch (error) {
+            console.error("Something wenr wrong")
+        }
+
+    }
 
     const prevStep = () => {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);
@@ -85,19 +179,119 @@ export const RegisterContinue = () => {
 
 export const RegisterUserContinue = () => {
 
-    const steps = [<CVUser />, <BasicInformationUser />, <ContactInformationUser />];
     const [currentStep, setCurrentStep] = useState(0);
+
+    const [formData, setFormData] = useState({
+        nationality: '',
+        education: '',
+        gender: '',
+        expirience: '',
+        maritalStatus: '',
+        description: '',
+        birthday: null,
+        web: '',
+        github: '',
+        linkedin: '',
+
+        photo: null,
+        photoPreview: null,
+        cv: null,
+        cvPreview: null,
+
+        localization: '',
+        phone: ''
+    })
+
+    const updateFormData = (fieldName, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [fieldName]: value
+        }))
+    }
+
+    const steps = [
+        <CVUser
+            key="step1"
+            formData={formData}
+            updateFormData={updateFormData} />,
+        <BasicInformationUser
+            key="step2"
+            formData={formData}
+            updateFormData={updateFormData} />,
+        <ContactInformationUser
+            key="step3"
+            formData={formData}
+            updateFormData={updateFormData} />
+    ];
 
     const navigate = useNavigate();
 
-    const nextStep = () => {
+    const nextStep = async (e) => {
+        e.preventDefault();
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
             // Finish button clicked
-            navigate('/empl-dashboard');
+            updateProfile()
+            navigate('/us-dashboard');
         }
     };
+
+    const updateProfile = async () => {
+
+        try {
+            const token = localStorage.getItem('token');
+            console.log('Token: ', token);
+
+            const formDataToSend = new FormData();
+
+            const payload = {
+                location: formData.localization,
+                phone_number: formData.phone,
+                website: formData.web,
+                education: formData.education,
+                experience_years: formData.expirience,
+                github_link: formData.github,
+                linkedin_link: formData.linkedin,
+                nationality: formData.nationality,
+                birth_date: formData.birthday ?
+                    new Date(formData.birthday).toISOString().split('T')[0] : '',
+                gender: formData.gender,
+                bio: formData.description
+            };
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (value !== null && value !== undefined && value !== '') {
+                    formDataToSend.append(key, value);
+                }
+            });
+
+            if (formData.photo) {
+                formDataToSend.append('profile_picture', formData.photo);
+            }
+            if (formData.cv) {
+                formDataToSend.append('cv', formData.cv);
+            }
+
+
+            const response = await fetch('http://localhost:8000/api/profiles/',
+                {
+                    method: 'POST',
+                    headers: { 'Authorization': `Token ${token}` },
+                    body: formDataToSend
+                });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log("User data updated", result);
+            } else {
+                console.log("Error updating profile")
+            }
+        } catch (error) {
+            console.error("Something wenr wrong")
+        }
+    }
 
     const prevStep = () => {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);

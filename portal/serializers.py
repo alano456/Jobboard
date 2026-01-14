@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id','username','email']
+        fields = ['id','username','email', 'first_name', 'last_name']
 
 
 # ==== PROFILE ====
@@ -17,7 +17,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
     class Meta:
         model = Profile
-        fields = ['id','user', 'is_employer', 'company_name']
+        fields = '__all__'
 
 
 # === Category ===
@@ -30,14 +30,15 @@ class CategorySerializer(serializers.ModelSerializer):
 # === Job ===
 class JobSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    category = CategorySerializer(read_only=True)
+    #category = CategorySerializer(read_only=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
 
     class Meta:
         model = Job
         fields = [
-            'id', 'title', 'description', 'created_at', 'expires_at',
+            'id', 'title', 'description', 'start_date', 'expires_at',
             'category', 'user', 'image', 'salary_min', 'salary_max',
-            'location', 'job_type', 'experience_required'
+            'location', 'job_type', 'experience_required', "responsibilities", "contract_type"
         ]
 
 
