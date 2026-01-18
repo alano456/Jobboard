@@ -5,7 +5,12 @@ import { Bell, BriefcaseBusiness, Check, MapPin } from "lucide-react";
 import { Salary } from "./Salary";
 
 
-export const NavbarEmployer = ({ setMode }) => {
+export const NavbarEmployer = ({ setMode, logo }) => {
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `http://127.0.0.1:8000${path}`;
+    };
 
     return (<>
 
@@ -29,7 +34,13 @@ export const NavbarEmployer = ({ setMode }) => {
                     <div className="bg-pink-600 w-3 h-3 rounded-full absolute top-0 -right-0.5"></div>
                 </div>
 
-                <div className="bg-purple-800 w-10 h-10 rounded-full"></div>
+                <div className="w-10 h-10 rounded-full bg-purple-100 overflow-hidden border border-purple-200">
+                    {logo ? (
+                        <img src={getFullImageUrl(logo)} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-purple-800"></div>
+                    )}
+                </div>
             </div>
         </div>
 
@@ -41,7 +52,12 @@ export const NavbarEmployer = ({ setMode }) => {
 
 
 
-export const NavbarUser = ({ setMode }) => {
+export const NavbarUser = ({ setMode, profilePicture }) => {
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `http://127.0.0.1:8000${path}`;
+    };
 
     return (<>
 
@@ -65,7 +81,13 @@ export const NavbarUser = ({ setMode }) => {
                     <div className="bg-pink-600 w-3 h-3 rounded-full absolute top-0 -right-0.5"></div>
                 </div>
 
-                <div className="bg-purple-800 w-10 h-10 rounded-full"></div>
+                <div className="w-10 h-10 rounded-full bg-purple-100 overflow-hidden border border-purple-200">
+                    {profilePicture ? (
+                        <img src={getFullImageUrl(profilePicture)} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-purple-800"></div>
+                    )}
+                </div>
             </div>
         </div>
 

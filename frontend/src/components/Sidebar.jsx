@@ -93,12 +93,11 @@ export const UserSidebar = ({ mode, setMode }) => {
                         <span>Zapisane oferty</span>
                     </button>
                     <button
-                        onClick={() => setMode("messeges")} className={` ${mode === 'messeges' && 'bg-purple-100 hover:bg-purple-100  hover:border-l-4 border-l-4 border-purple-900 text-purple-900 '} hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row w-full  items-center justify-between gap-3 px-4 py-3 cursor-pointer `}>
+                        onClick={() => setMode("notifications")} className={` ${mode === 'notifications' && 'bg-purple-100 hover:bg-purple-100  hover:border-l-4 border-l-4 border-purple-900 text-purple-900 '} hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row w-full  items-center justify-between gap-3 px-4 py-3 cursor-pointer `}>
                         <div className="flex items-center gap-3">
                             <Bell />
                             <span>Powiadomienia</span>
                         </div>
-                        <span className="">12</span>
                     </button>
                     <button
                         onClick={() => setMode("settings")} className={` ${mode === 'settings' && 'bg-purple-100 hover:bg-purple-100  hover:border-l-4 border-l-4 border-purple-900 text-purple-900 '} hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row w-full  items-center justify-start gap-3 px-4 py-3 cursor-pointer `}>
@@ -106,7 +105,7 @@ export const UserSidebar = ({ mode, setMode }) => {
                         <span>Ustawenia</span>
                     </button>
                 </div>
-            </div>
+            </div >
             <div className="flex mt-auto flex-col w-full">
                 <button onClick={logout} className="ml-4 mb-4 hover:bg-gray-100 hover:text-gray-600 hover:border-0 flex flex-row  items-center justify-start gap-3 px-5 py-3 cursor-pointer ">
                     <LogOut />
@@ -114,7 +113,7 @@ export const UserSidebar = ({ mode, setMode }) => {
                 </button>
             </div>
 
-        </div>
+        </div >
     )
 
 }

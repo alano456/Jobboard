@@ -64,6 +64,8 @@ class Profile(models.Model):
     founding_date = models.DateField(null=True, blank=True, verbose_name="Data założenia")
     detailed_description = models.TextField(blank=True, verbose_name="Szczegółowy opis działalności")
     work_culture = models.TextField(blank=True, verbose_name="Opis pracy w firmie")
+    
+    saved_by = models.ManyToManyField(User, related_name='saved_profiles', blank=True)
 
     def __str__(self):
         type_str = "Pracodawca" if self.is_employer else "Kandydat"
@@ -162,3 +164,12 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Powiadomienie dla {self.user.username}: {self.message[:30]}"

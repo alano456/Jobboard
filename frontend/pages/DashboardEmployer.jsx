@@ -4,7 +4,9 @@ import { NavbarEmployer } from '../src/components/Navbar';
 import { AllCandidateInOffer, AppliedOffers, MainDashboard } from "../src/components/DashboardsForEmployer";
 import { NewJob } from "../src/components/NewJob";
 import { useState, useEffect } from "react";
-import { SearchJobs, SearchCandidates, Notifications } from "../src/components/EmployerFeatures";
+import { SearchJobs, SearchCandidates, SavedCandidates } from "../src/components/EmployerFeatures";
+import { Notifications } from "../src/components/Notifications";
+import { Settings } from "../src/components/Settings";
 import { JobsList } from "../src/components/JobsList"
 
 export const DashboardEmployer = () => {
@@ -30,16 +32,14 @@ export const DashboardEmployer = () => {
 
     const fetchProfileData = async () => {
         try {
-
             const token = localStorage.getItem('token');
-
             if (!token) {
                 setError("No token found");
                 setLoading(false);
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/api/profiles/', {
+            const response = await fetch('http://localhost:8000/api/profiles/me/', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Token ${token}`,
@@ -48,24 +48,18 @@ export const DashboardEmployer = () => {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("Profile: ", data);
-
             setProfileData(data);
             setLoading(false);
-            setLogo(data.company_logo)
-
+            setLogo(data.profile_picture || data.company_logo);
         } catch (error) {
             setError(error.message);
             setLoading(false);
         }
     };
-
 
     if (loading) {
         return (
@@ -98,14 +92,16 @@ export const DashboardEmployer = () => {
                 <EmployerSidebar mode={mode} setMode={setMode} />
             </div>
             <div className="flex flex-col h-full min-h-0">
-                {mode === "main" && <MainDashboard />}
+                {mode === "main" && <MainDashboard setMode={setMode} setSelectedJobId={setSelectedJobId} />}
                 {mode === "search_jobs" && <JobsList onJobSelect={handleJobSelect} />}
                 {mode === "newjob" && <NewJob />}
-                {mode === "alljob" && <AppliedOffers mode={mode} setMode={setMode} />}
-                {mode === "allCandidatesInOffer" && <AllCandidateInOffer />}
+                {mode === "alljob" && <AppliedOffers mode={mode} setMode={setMode} setSelectedJobId={setSelectedJobId} />}
+                {mode === "allCandidatesInOffer" && <AllCandidateInOffer jobId={selectedJobId} setMode={setMode} />}
                 {mode === "search_jobs" && <SearchJobs />}
                 {mode === "search_candidates" && <SearchCandidates />}
+                {mode === "allcandidates" && <SavedCandidates />}
                 {mode === "notifications" && <Notifications />}
+                {mode === "settings" && <Settings refreshProfile={fetchProfileData} />}
             </div>
         </div>
     )

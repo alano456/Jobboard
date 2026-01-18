@@ -3,19 +3,21 @@ import { ArrowBigRight, ArrowDownToLine, BriefcaseBusiness, ChevronLeft, Chevron
 import { useState, useRef, useEffect } from "react";
 import MyDatePicker from "./DatePicker";
 import Editor from "./TextEditor";
-import { useActionData } from "react-router-dom";
+import api from "../api";
 
 
-export const MainDashboard = () => {
+export const MainDashboard = ({ setMode, setSelectedJobId }) => {
 
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [jobsData, setJobsData] = useState([]);
+    const [savedCandidates, setSavedCandidates] = useState([]);
 
     useEffect(() => {
         fetchProfileData();
-        fetchMyJobs()
+        fetchMyJobs();
+        fetchSavedCandidates();
     }, []);
 
     const fetchProfileData = async () => {
@@ -29,7 +31,7 @@ export const MainDashboard = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/api/profiles/', {
+            const response = await fetch('http://localhost:8000/api/profiles/me/', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Token ${token}`,
@@ -39,12 +41,10 @@ export const MainDashboard = () => {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("Profile: ", data);
 
             setProfileData(data);
             setLoading(false);
@@ -58,17 +58,18 @@ export const MainDashboard = () => {
 
     const fetchMyJobs = async () => {
         try {
-            const token = localStorage.getItem("token");
+            const res = await api.get("/jobs/my/");
+            setJobsData(res.data);
+            console.log("My jobs:", res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
-            const response = await fetch("http://localhost:8000/api/jobs/my/", {
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
-            });
-
-            const data = await response.json();
-            setJobsData(data);
-            console.log("My jobs:", data);
+    const fetchSavedCandidates = async () => {
+        try {
+            const res = await api.get("/profiles/saved/");
+            setSavedCandidates(res.data);
         } catch (err) {
             console.error(err);
         }
@@ -114,7 +115,7 @@ export const MainDashboard = () => {
                 </div>
                 <div className="bg-amber-100 rounded-md px-4 py-5 flex gap-5 items-center w-80 justify-between">
                     <div className="flex gap-1 flex-col">
-                        <h1 className="text-2xl text-slate-800 font-semibold">10</h1>
+                        <h1 className="text-2xl text-slate-800 font-semibold">{savedCandidates.length}</h1>
                         <p className="text-[14px]">Zapisanych kandydatów</p>
                     </div>
                     <div className="bg-white p-4 rounded-sm">
@@ -135,10 +136,15 @@ export const MainDashboard = () => {
                     <p>AKCJE</p>
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
-                    {jobsData.map((job => (
-                        <Application key={job.id} job={job} />
-                    )))
-                    }
+                    {Array.isArray(jobsData) && jobsData.length > 0 ? (
+                        jobsData.map((job => (
+                            <Application key={job.id} job={job} setMode={setMode} setSelectedJobId={setSelectedJobId} />
+                        )))
+                    ) : (
+                        <div className="flex items-center justify-center p-10 text-gray-500">
+                            Brak opublikowanych ofert.
+                        </div>
+                    )}
                 </div>
 
             </div>
@@ -146,7 +152,7 @@ export const MainDashboard = () => {
     )
 }
 
-export const Application = ({ setMode, job }) => {
+export const Application = ({ setMode, job, setSelectedJobId }) => {
 
 
     const isExpired = new Date(job.expires_at) < new Date();
@@ -188,14 +194,22 @@ export const Application = ({ setMode, job }) => {
                 <Users className="size-5" />
                 <p className="w-40">10 zgłoszonych kandydatów</p>
             </div>
-            <button onClick={() => setMode("allCandidatesInOffer")} className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Zobacz kandydatów</button>
+            <button
+                onClick={() => {
+                    setSelectedJobId(job.id);
+                    setMode("allCandidatesInOffer");
+                }}
+                className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out"
+            >
+                Zobacz kandydatów
+            </button>
 
         </div>
     )
 }
 
 
-export const AppliedOffers = ({ mode, setMode }) => {
+export const AppliedOffers = ({ mode, setMode, setSelectedJobId }) => {
 
     const [jobsData, setJobsData] = useState([]);
 
@@ -205,17 +219,18 @@ export const AppliedOffers = ({ mode, setMode }) => {
 
     const fetchMyJobs = async () => {
         try {
-            const token = localStorage.getItem("token");
+            const res = await api.get("/jobs/my/");
+            setJobsData(res.data);
+            console.log("My jobs:", res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
-            const response = await fetch("http://localhost:8000/api/jobs/my/", {
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
-            });
-
-            const data = await response.json();
-            setJobsData(data);
-            console.log("My jobs:", data);
+    const fetchSavedCandidates = async () => {
+        try {
+            const res = await api.get("/profiles/saved/");
+            setSavedCandidates(res.data);
         } catch (err) {
             console.error(err);
         }
@@ -255,7 +270,7 @@ export const AppliedOffers = ({ mode, setMode }) => {
                 <div className="overflow-y-auto flex-1 min-h-0" >
 
                     {jobsData.map((job => (
-                        <Application setMode={setMode} key={job.id} job={job} />
+                        <Application setMode={setMode} key={job.id} job={job} setSelectedJobId={setSelectedJobId} />
                     )))
                     }
                     <Pagination />
@@ -380,11 +395,37 @@ export default function MultiSelect({ options, name, value = [],
 }
 
 
-export const AllCandidateInOffer = () => {
+export const AllCandidateInOffer = ({ jobId, setMode }) => {
+    const [applications, setApplications] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (jobId) {
+            fetchApplications();
+        }
+    }, [jobId]);
+
+    const fetchApplications = async () => {
+        try {
+            const res = await api.get(`/jobs/${jobId}/applications/`);
+            setApplications(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    }
+
+    if (loading) return <div className="p-10 text-center">Ładowanie kandydatów...</div>;
 
     return (
         <div className="flex flex-col px-10 py-7 min-h-full ">
-            <p className="text-gray-500 text-sm cursor-pointer w-40 pb-2 underline decoration-transparent hover:decoration-current transition-all duration-200">Powrót do ogłoszeń</p>
+            <p
+                onClick={() => setMode("alljob")}
+                className="text-gray-500 text-sm cursor-pointer w-40 pb-2 underline decoration-transparent hover:decoration-current transition-all duration-200"
+            >
+                Powrót do ogłoszeń
+            </p>
             <div className="flex flex-row items-center justify-between pb-3 pr-7 border-b border-gray-300">
                 <h1 className="text-2xl text-slate-800 font-extrabold ">Kandydaci</h1>
                 <div className="flex items-center justify-center gap-4">
@@ -393,15 +434,14 @@ export const AllCandidateInOffer = () => {
                 </div>
             </div>
             <div className="overflow-y-auto">
-                <div className="grid grid-cols-3 auto-rows-max gap-y-5 overflow-y-auto items-start justify-start pt-5 mt-2 rounded-2xl px-5">
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
-                    <CondydateMini />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-max gap-6 overflow-y-auto items-start justify-start pt-5 mt-2 rounded-2xl px-5">
+                    {applications.length > 0 ? (
+                        applications.map(app => (
+                            <CondydateMini key={app.id} application={app} />
+                        ))
+                    ) : (
+                        <p className="text-gray-500 col-span-3 text-center py-10">Brak zgłoszeń dla tej oferty.</p>
+                    )}
                 </div>
                 <Pagination />
             </div>
@@ -411,30 +451,47 @@ export const AllCandidateInOffer = () => {
     )
 }
 
-export const CondydateMini = () => {
+export const CondydateMini = ({ application }) => {
+    const { candidate, candidate_profile, created_at } = application;
+    const dateStr = new Date(created_at).toLocaleDateString();
+
+    const handleDownloadCV = () => {
+        if (candidate_profile?.cv) {
+            window.open(`http://localhost:8000${candidate_profile.cv}`, '_blank');
+        } else {
+            alert("Kandydat nie załączył CV.");
+        }
+    }
 
     return (
-        <div className="flex items-center gap-2 flex-col w-80 border px-6 py-4 border-gray-300 h-auto min-h-40 max-h-80 bg-white rounded-md">
-            <div className="w-full flex items-center justify-start gap-2">
-                <div className="bg-pink-200 w-10 h-10 rounded-full "></div>
+        <div className="flex items-center gap-2 flex-col w-full border px-6 py-4 border-gray-300 h-auto min-h-40 bg-white rounded-md shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-full flex items-center justify-start gap-3">
+                <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center overflow-hidden">
+                    {candidate_profile?.profile_picture ? (
+                        <img src={`http://localhost:8000${candidate_profile.profile_picture}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <Users className="text-purple-800 size-6" />
+                    )}
+                </div>
                 <div className="flex flex-col items-start justify-center">
-                    <h1 className="text-slate-900 text-md font-medium">Imie Nazwisko</h1>
-                    <p className="text-gray-500 text-sm">Stanowisko</p>
+                    <h1 className="text-slate-900 text-md font-bold">{candidate.first_name} {candidate.last_name || candidate.username}</h1>
+                    <p className="text-gray-500 text-sm">{candidate_profile?.location || "Brak lokalizacji"}</p>
                 </div>
             </div>
-            <div className="border-gray-300 border-t w-72 my-2"></div>
+            <div className="border-gray-300 border-t w-full my-2"></div>
             <div className="text-gray-500 text-sm w-full flex gap-2 flex-col">
-                <p className="flex flex-row items-center gap-2 "><Circle className="size-2" /> 7 lat doświadczenia</p>
-                <p className="flex flex-row items-center gap-2 "><Circle className="size-2" /> Wyksztalcenie: wyższe</p>
-                <p className="flex flex-row items-center gap-2 "><Circle className="size-2" /> Wyslano: 07/12/2025</p>
+                <p className="flex flex-row items-center gap-2 "><Circle className="size-2 fill-purple-800 text-purple-800" /> {candidate_profile?.experience_years || 0} lat doświadczenia</p>
+                <p className="flex flex-row items-center gap-2 "><Circle className="size-2 fill-purple-800 text-purple-800" /> Wyksztalcenie: {candidate_profile?.education || "Brak danych"}</p>
+                <p className="flex flex-row items-center gap-2 "><Circle className="size-2 fill-purple-800 text-purple-800" /> Wysłano: {dateStr}</p>
             </div>
             <button
-                className="group flex w-full items-center gap-2 text-sm text-purple-900 cursor-pointer mt-2 transition-all duration-200"
+                onClick={handleDownloadCV}
+                className="group flex w-full items-center gap-2 text-sm text-purple-900 cursor-pointer mt-4 transition-all duration-200 font-bold"
             >
-                <ArrowDownToLine strokeWidth={1.5} className="size-5" />
+                <ArrowDownToLine strokeWidth={2} className="size-5" />
 
                 <span className="underline decoration-transparent group-hover:decoration-current transition-all duration-200">
-                    Pobierz CV
+                    Zobacz / Pobierz CV
                 </span>
             </button>
 

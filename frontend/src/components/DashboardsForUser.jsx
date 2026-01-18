@@ -7,9 +7,12 @@ import { useActionData } from "react-router-dom";
 import api from "../api";
 
 
-export const MainDashboard = () => {
+export const MainDashboard = ({ onViewJob }) => {
     const [stats, setStats] = useState({ applied: 0, saved: 0, notifications: 0 });
     const [recentApplications, setRecentApplications] = useState([]);
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -20,11 +23,13 @@ export const MainDashboard = () => {
                 ]);
 
                 // Sort applications by date desc for "Recent"
-                const sortedApps = appsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const sortedApps = Array.isArray(appsRes.data)
+                    ? appsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    : [];
 
                 setStats({
-                    applied: appsRes.data.length,
-                    saved: savedRes.data.length,
+                    applied: Array.isArray(appsRes.data) ? appsRes.data.length : 0,
+                    saved: Array.isArray(savedRes.data) ? savedRes.data.length : 0,
                     notifications: 0 // Mock for now
                 });
                 setRecentApplications(sortedApps.slice(0, 5));
@@ -33,21 +38,12 @@ export const MainDashboard = () => {
             }
         };
         fetchData();
-    }, []);
-
-    const [profileData, setProfileData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
         fetchProfileData();
     }, []);
 
     const fetchProfileData = async () => {
         try {
-
             const token = localStorage.getItem('token');
-
             if (!token) {
                 setError("No token found");
                 setLoading(false);
@@ -63,17 +59,12 @@ export const MainDashboard = () => {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("Profile: ", data);
-
             setProfileData(data);
             setLoading(false);
-
         } catch (error) {
             setError(error.message);
             setLoading(false);
@@ -84,28 +75,24 @@ export const MainDashboard = () => {
         return (
             <div className="w-screen h-screen bg-white relative flex justify-center items-center">
                 <div className="flex gap-x-2">
-                    <div
-                        className="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"
-                    ></div>
-                    <div
-                        className="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"
-                    ></div>
-                    <div
-                        className="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"
-                    ></div>
+                    <div className="w-5 bg-[#d991c2] h-5 rounded-full animate-bounce"></div>
+                    <div className="w-5 h-5 bg-[#9869b8] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-5 h-5 bg-[#6756cc] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                 </div>
             </div>
         )
     }
 
     if (error) {
-        return <div className="">Error : {error}</div>
+        return <div className="p-10 text-red-600 font-bold">Error: {error}</div>
     }
 
     return (
-        <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full">
+        <div className="flex px-10 h-full py-7 flex-col gap-6 min-h-full overflow-y-auto">
             <div className="flex gap-1 items-start flex-col">
-                <h1 className="text-2xl text-slate-800 font-extrabold">Witaj, {profileData.user.first_name} {profileData.user.last_name}</h1>
+                <h1 className="text-2xl text-slate-800 font-extrabold">
+                    Witaj, {profileData?.user?.first_name} {profileData?.user?.last_name}
+                </h1>
                 <p className="text-md text-gray-500">Oto twoje dzienne aktywności</p>
             </div>
             <div className="flex items-center justify-between flex-row gap-5">
@@ -140,28 +127,31 @@ export const MainDashboard = () => {
 
             <div className="flex items-center justify-between">
                 <p className="font-bold text-slate-800">Ostatnio aplikowane</p>
-                <div className="flex items-center justify-center cursor-pointer group text-gray-500"><p>Zobacz wszystkie <span className="text-2xl inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1"> →</span></p></div>
+                <div className="flex items-center justify-center cursor-pointer group text-gray-500">
+                    <p>Zobacz wszystkie <span className="text-2xl inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1"> →</span></p>
+                </div>
             </div>
             <div className="flex flex-col flex-1 min-h-0 gap-2">
-                <div className="grid grid-cols-[3fr_2.2fr_2fr_1fr] text-sm px-5 py-1 bg-gray-100">
+                <div className="grid grid-cols-[3fr_2.2fr_2fr_1fr] text-sm px-5 py-2 bg-gray-100 font-bold text-gray-600">
                     <p className="pl-8">OFERTY</p>
                     <p>DATA PRZESŁANIA</p>
                     <p>STATUS</p>
                     <p>AKCJE</p>
                 </div>
-                <div className="overflow-y-auto flex-1 min-h-0" >
+                <div className="overflow-y-auto flex-1 min-h-0">
                     {recentApplications.map(app => (
-                        <Application key={app.id} data={app} />
+                        <Application key={app.id} data={app} onViewJob={onViewJob} />
                     ))}
-                    {recentApplications.length === 0 && <p className="text-center p-4 text-gray-500">Brak ostatnich aplikacji.</p>}
+                    {recentApplications.length === 0 && (
+                        <p className="text-center p-10 text-gray-500 italic">Brak ostatnich aplikacji.</p>
+                    )}
                 </div>
-
             </div>
-        </div >
+        </div>
     )
 }
 
-export const Application = ({ setMode, data }) => {
+export const Application = ({ setMode, data, onViewJob }) => {
     if (!data) return null;
     const { job, created_at, status } = data;
 
@@ -197,14 +187,14 @@ export const Application = ({ setMode, data }) => {
                 <CircleCheckBig className="size-5" />
                 <p>{status === 'applied' ? 'Złożona' : status}</p>
             </div>
-            <button onClick={() => setMode && setMode("allCandidatesInOffer")} className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Szczegóły</button>
+            <button onClick={() => onViewJob && onViewJob(job.id)} className="text-sm bg-gray-100 mt-2 flex items-center gap-2 justify-center text-purple-900 px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Szczegóły</button>
 
         </div>
     )
 }
 
 
-export const Applied = ({ mode, setMode }) => {
+export const Applied = ({ mode, setMode, onViewJob }) => {
 
     const [type, setType] = useState("not");
     const [applications, setApplications] = useState([]);
@@ -247,7 +237,7 @@ export const Applied = ({ mode, setMode }) => {
                 </div>
                 <div className="overflow-y-auto flex-1 min-h-0" >
                     {applications.map(app => (
-                        <Application key={app.id} setMode={setMode} data={app} />
+                        <Application key={app.id} setMode={setMode} data={app} onViewJob={onViewJob} />
                     ))}
                     <Pagination />
                 </div>
@@ -260,7 +250,7 @@ export const Applied = ({ mode, setMode }) => {
 
 
 
-export const Saved = ({ mode, setMode }) => {
+export const Saved = ({ mode, setMode, onViewJob }) => {
 
     const [type, setType] = useState("not")
     const [savedJobs, setSavedJobs] = useState([]);
@@ -297,7 +287,7 @@ export const Saved = ({ mode, setMode }) => {
             <div className="flex flex-col flex-1 min-h-0 gap-2">
                 <div className="overflow-y-auto flex-1 min-h-0" >
                     {savedJobs.map(job => (
-                        <SavedApplication key={job.id} setMode={setMode} job={job} />
+                        <SavedApplication key={job.id} setMode={setMode} job={job} onViewJob={onViewJob} />
                     ))}
                     <Pagination />
                 </div>
@@ -309,7 +299,7 @@ export const Saved = ({ mode, setMode }) => {
 
 
 
-export const SavedApplication = ({ setMode, job }) => {
+export const SavedApplication = ({ setMode, job, onViewJob }) => {
     if (!job) return null;
     const salary = job.salary_min ? (job.salary_max ? `${job.salary_min}-${job.salary_max}` : `Od ${job.salary_min}`) : "Do negocjacji";
 
@@ -339,7 +329,7 @@ export const SavedApplication = ({ setMode, job }) => {
                     <Bookmark className="text-amber-400 fill-amber-400" />
                 </button>
             </div>
-            <button onClick={() => setMode("allCandidatesInOffer")} className="text-sm bg-purple-800 mt-2 flex items-center gap-2 justify-center text-white px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Aplikuj</button>
+            <button onClick={() => onViewJob && onViewJob(job.id)} className="text-sm bg-purple-800 mt-2 flex items-center gap-2 justify-center text-white px-6 py-3 rounded-sm font-bold h-auto cursor-pointer hover:scale-105 hover:shadow-md transition-scale duration-300 ease-in-out">Aplikuj</button>
         </div>
     )
 }

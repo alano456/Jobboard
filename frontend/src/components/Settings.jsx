@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { User, Bell, Shield, Mail, Save, X, Loader2 } from "lucide-react";
 import api from "../api";
 
-export const Settings = () => {
+export const Settings = ({ refreshProfile }) => {
     const [activeTab, setActiveTab] = useState("profile");
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -15,18 +15,13 @@ export const Settings = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // First get user details (for ID/Email)
+            // Get user details
             const userRes = await api.get('/users/me/');
             setUser(userRes.data);
 
-            // Then get profile details by ID
-            // Assuming profile ID matches user ID or we can fetch list and filter
-            // For simplicity, let's try assuming standard relationship or list
-            const profileRes = await api.get('/profiles/');
-            const myProfile = profileRes.data.find(p => p.user.id === userRes.data.id);
-            if (myProfile) {
-                setProfile(myProfile);
-            }
+            // Get profile details - using the new 'me' endpoint
+            const profileRes = await api.get('/profiles/me/');
+            setProfile(profileRes.data);
         } catch (error) {
             console.error("Failed to load settings data", error);
         } finally {
@@ -60,14 +55,14 @@ export const Settings = () => {
             </div>
 
             <div className="flex flex-col gap-4 max-w-4xl">
-                {activeTab === "profile" && <ProfileSettings user={user} profile={profile} refresh={fetchData} />}
+                {activeTab === "profile" && <ProfileSettings user={user} profile={profile} refresh={fetchData} refreshProfile={refreshProfile} />}
                 {activeTab === "security" && <SecuritySettings user={user} />}
             </div>
         </div>
     );
 };
 
-const ProfileSettings = ({ user, profile, refresh }) => {
+const ProfileSettings = ({ user, profile, refresh, refreshProfile }) => {
     const [formData, setFormData] = useState({
         first_name: user?.first_name || "",
         last_name: user?.last_name || "",
@@ -81,11 +76,46 @@ const ProfileSettings = ({ user, profile, refresh }) => {
         education: profile?.education || "",
         marital_status: profile?.marital_status || ""
     });
+
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `http://127.0.0.1:8000${path}`;
+    };
+
+    const [profilePicture, setProfilePicture] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(getFullImageUrl(profile?.profile_picture));
+
+    useEffect(() => {
+        setFormData({
+            first_name: user?.first_name || "",
+            last_name: user?.last_name || "",
+            email: user?.email || "",
+            bio: profile?.bio || "",
+            phone_number: profile?.phone_number || "",
+            location: profile?.location || "",
+            website: profile?.website || "",
+            github_link: profile?.github_link || "",
+            linkedin_link: profile?.linkedin_link || "",
+            education: profile?.education || "",
+            marital_status: profile?.marital_status || ""
+        });
+        setPreviewUrl(getFullImageUrl(profile?.profile_picture));
+    }, [user, profile]);
+
     const [isSaving, setIsSaving] = useState(false);
     const [msg, setMsg] = useState(null);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfilePicture(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -102,20 +132,30 @@ const ProfileSettings = ({ user, profile, refresh }) => {
 
             // Update Profile (ProfileViewSet)
             if (profile) {
-                await api.patch(`/profiles/${profile.id}/`, {
-                    bio: formData.bio,
-                    phone_number: formData.phone_number,
-                    location: formData.location,
-                    website: formData.website,
-                    github_link: formData.github_link,
-                    linkedin_link: formData.linkedin_link,
-                    education: formData.education,
-                    marital_status: formData.marital_status
+                const profileData = new FormData();
+                profileData.append("bio", formData.bio);
+                profileData.append("phone_number", formData.phone_number);
+                profileData.append("location", formData.location);
+                profileData.append("website", formData.website);
+                profileData.append("github_link", formData.github_link);
+                profileData.append("linkedin_link", formData.linkedin_link);
+                profileData.append("education", formData.education);
+                profileData.append("marital_status", formData.marital_status);
+
+                if (profilePicture) {
+                    profileData.append("profile_picture", profilePicture);
+                }
+
+                await api.patch('/profiles/me/', profileData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
                 });
             }
 
             setMsg({ type: 'success', text: 'Zapisano zmiany!' });
             refresh();
+            if (refreshProfile) refreshProfile();
         } catch (error) {
             console.error(error);
             setMsg({ type: 'error', text: 'Błąd zapisu. Sprawdź poprawność danych.' });
@@ -133,6 +173,26 @@ const ProfileSettings = ({ user, profile, refresh }) => {
                     {msg.text}
                 </div>
             )}
+
+            <div className="flex items-center gap-6">
+                <div className="relative size-24 rounded-full overflow-hidden border border-gray-200">
+                    {previewUrl ? (
+                        <img src={previewUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            <User className="size-10" />
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 cursor-pointer bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors">
+                        Wybierz zdjęcie
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    </label>
+                    <p className="text-xs text-gray-500">JPG, PNG max 2MB</p>
+                </div>
+            </div>
+
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">

@@ -94,8 +94,9 @@ export const CreateAccount = ({ onSwitch }) => {
                 }
 
             } else {
-                console.log("Errors", result.errors);
-                alert("Błąd rejestracji: " + JSON.stringify(result.errors));
+                console.log("Errors", result);
+                const errorMsg = result.errors ? JSON.stringify(result.errors) : (result.detail || "Nieznany błąd");
+                alert("Błąd rejestracji: " + errorMsg);
             }
         } catch (error) {
             console.error("Something went wrong", error);

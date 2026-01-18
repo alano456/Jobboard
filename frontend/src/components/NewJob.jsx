@@ -46,6 +46,12 @@ export const NewJob = () => {
 
     const handleSubmit = async () => {
         setLoading(true);
+        if (!category || category === 'none') {
+            setError("Proszę wybrać kategorię.");
+            setLoading(false);
+            return;
+        }
+
         setError("");
 
         // Construct payload matching JobSerializer
@@ -82,7 +88,14 @@ export const NewJob = () => {
 
         } catch (err) {
             console.error(err);
-            setError("Błąd podczas publikowania. Sprawdź dane (np. czy jesteś zalogowany jako pracodawca).");
+            const backendErrors = err.response?.data;
+            let errorMsg = "Błąd podczas publikowania.";
+            if (backendErrors) {
+                errorMsg += " " + JSON.stringify(backendErrors);
+            } else {
+                errorMsg += " Sprawdź dane (np. czy jesteś zalogowany jako pracodawca).";
+            }
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -106,13 +119,14 @@ export const NewJob = () => {
         )
     }
 
-    if (error) {
-        return <div className="flex items-center justify-center w-full h-full">Error : {error}</div>
-    }
+    // Removed whole-page error return to keep form visible
 
     return (
         <div className="flex flex-col px-10 h-full overflow-y-auto items-start justify-start py-7 gap-8 min-h-0 bg-white">
-            <h1 className="text-2xl text-slate-800 font-extrabold">Opublikuj ogłoszenie</h1>
+            <div className="flex w-full justify-between items-center">
+                <h1 className="text-2xl text-slate-800 font-extrabold">Opublikuj ogłoszenie</h1>
+                {error && <p className="text-red-600 font-medium text-sm animate-pulse">{error}</p>}
+            </div>
 
 
             <div className="flex w-full items-start justify-center flex-col gap-9">

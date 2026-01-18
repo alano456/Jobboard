@@ -15,6 +15,7 @@ export const RegisterSetupWrapper = () => {
 export const RegisterContinue = () => {
 
     const [currentStep, setCurrentStep] = useState(0);
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         companyName: '',
@@ -60,12 +61,14 @@ export const RegisterContinue = () => {
         />
     ]
 
-    const nextStep = () => {
+    const nextStep = async () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            updateProfile()
-            navigate('/empl-dashboard');
+            const success = await updateProfile();
+            if (success) {
+                navigate('/empl-dashboard');
+            }
         }
     };
 
@@ -96,24 +99,23 @@ export const RegisterContinue = () => {
             }
 
 
-            const response = await fetch('http://localhost:8000/api/profiles/',
-                {
-                    method: 'POST',
-                    headers: { 'Authorization': `Token ${token}` },
-                    body: formDataToSend
-                }
-            );
+            const response = await api.patch('/profiles/me/', formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-            const result = await response.json();
-
-            if (response.ok) {
-                console.log("User data updated", result);
+            if (response.status === 200 || response.status === 204) {
+                console.log("User data updated", response.data);
+                return true;
             } else {
-                console.log("Error updating profile")
+                console.log("Error updating profile", response.data);
+                alert("Błąd podczas zapisywania profilu.");
+                return false;
             }
 
         } catch (error) {
-            console.error("Something wenr wrong")
+            console.error("Something went wrong", error);
+            alert("Wystąpił błąd połączenia.");
+            return false;
         }
 
     }
@@ -216,6 +218,7 @@ export const RegisterContinue = () => {
 export const RegisterUserContinue = () => {
 
     const [currentStep, setCurrentStep] = useState(0);
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         nationality: '',
@@ -266,9 +269,10 @@ export const RegisterUserContinue = () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            updateProfile()
-            navigate('/us-dashboard');
-
+            const success = await updateProfile();
+            if (success) {
+                navigate('/us-dashboard');
+            }
         }
     };
 
@@ -309,22 +313,22 @@ export const RegisterUserContinue = () => {
             }
 
 
-            const response = await fetch('http://localhost:8000/api/profiles/',
-                {
-                    method: 'POST',
-                    headers: { 'Authorization': `Token ${token}` },
-                    body: formDataToSend
-                });
+            const response = await api.patch('/profiles/me/', formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-            const result = await response.json();
-
-            if (response.ok) {
-                console.log("User data updated", result);
+            if (response.status === 200 || response.status === 204) {
+                console.log("User data updated", response.data);
+                return true;
             } else {
-                console.log("Error updating profile")
+                console.log("Error updating profile", response.data);
+                alert("Błąd podczas zapisywania profilu.");
+                return false;
             }
         } catch (error) {
-            console.error("Something wenr wrong")
+            console.error("Something went wrong", error);
+            alert("Wystąpił błąd połączenia.");
+            return false;
         }
     }
 

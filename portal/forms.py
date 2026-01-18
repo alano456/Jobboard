@@ -12,7 +12,7 @@ class RegisterForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2', 'is_employer', 'company_name']
+        fields = ['username', 'email', 'first_name', 'last_name']
 
 class JobForm(forms.ModelForm):
     class Meta:

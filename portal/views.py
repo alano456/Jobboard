@@ -389,8 +389,8 @@ from django.utils import timezone
 from .forms import RegisterForm
 from django.db.models import Q
 from django.contrib.auth import login
-from .models import Job, Category, Application, Profile
-from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer, ChangePasswordSerializer
+from .models import Job, Category, Application, Profile, Notification
+from .serializers import JobSerializer, CategorySerializer, ApplicationSerializer, ProfileSerializer,  UserSerializer, ChangePasswordSerializer, NotificationSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
@@ -411,9 +411,14 @@ class CustomAuthToken(ObtainAuthToken):
             'is_employer': is_employer
         })
 
+class IsEmployer(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.is_employer)
+
 #-------------------------------------------
 
 class RegisterView(APIView):
+     permission_classes = [permissions.AllowAny]
      
      def get(self, request):
         return Response({"message": "Use POST to register"}, status=200)
@@ -431,74 +436,62 @@ class RegisterView(APIView):
                     profile.company_name = form.cleaned_data.get('company_name', '')
                 profile.save()
 
-            login(request, user)
+            # login(request, user) # Not strictly necessary for Token Auth but ok
             return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
         else:
              return Response({"errors": form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class ProfileView(APIView):
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        profile = Profile.objects.get(user=request.user)
-        serializer=ProfileSerializer(profile)
-        return Response(serializer.data)
-    
-    def post(self, request):
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-        try:
-            profile = Profile.objects.get(user=request.user)
-        except Profile.DoesNotExist:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-         
-        if request.content_type == 'application/json':
-            data=request.data
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
-            fields = [
-             'location', 'phone_number', 'website', 'education',
-             'experience_years', 'github_link', 'linkedin_link',
-             'nationality', 'birth_date', 'gender', 'bio',
-             "short_description", "company_type", "team_size",
-             "founding_date", "detailed_description",
-             "work_culture"
-            ]
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Profile.objects.all()
+        if hasattr(self.request.user, 'profile') and self.request.user.profile.is_employer:
+            return Profile.objects.filter(is_employer=False)
+        return Profile.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['get', 'patch', 'put'], url_path='me')
+    def me(self, request):
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        if request.method == 'GET':
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
         
-            for field in fields:
-                if field in data and data[field] is not ['', None]:
-                    setattr(profile, field, data[field])
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            file_fields = ['profile_picture', 'cv', 'company_logo', 'company_banner']
-            for file_field in file_fields:
-                 if file_field in request.FILES:
-                    setattr(profile, file_field, request.FILES[file_field])
-
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def toggle_save(self, request, pk=None):
+        profile = self.get_object()
+        user = request.user
+        
+        if profile.user == user:
+            return Response({"error": "Nie możesz zapisać własnego profilu."}, status=400)
+            
+        if user in profile.saved_by.all():
+            profile.saved_by.remove(user)
+            return Response({"status": "removed", "message": "Usunięto z zapisanych."})
         else:
-            fields = [
-                'location', 'phone_number', 'website', 'education',
-                'experience_years', 'github_link', 'linkedin_link',
-                'nationality', 'birth_date', 'gender', 'bio',
-                "short_description", "company_type", "team_size",
-                "founding_date", "detailed_description",
-                "work_culture"
-            ]
-            
-            for field in fields:
-                if field in request.data and request.data[field] not in ['', None]:
-                    setattr(profile, field, request.data[field])
-            
-            file_fields = ['profile_picture', 'cv', 'company_logo', 'company_banner']
-            for file_field in file_fields:
-                 if file_field in request.FILES:
-                    setattr(profile, file_field, request.FILES[file_field])
+            profile.saved_by.add(user)
+            return Response({"status": "added", "message": "Zapisano kandydata!"})
 
-
-        try:
-            profile.save()
-            serializer = ProfileSerializer(profile)
-            return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def saved(self, request):
+        saved_profiles = request.user.saved_profiles.all()
+        serializer = self.get_serializer(saved_profiles, many=True)
+        return Response(serializer.data)
         
     
 
@@ -544,7 +537,11 @@ class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all().order_by('-created_at')
     serializer_class = JobSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsEmployer()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
         queryset = Job.objects.all()
@@ -592,6 +589,13 @@ class JobViewSet(viewsets.ModelViewSet):
             candidate=user,
             status='applied' # Assuming default status
         )
+        
+        # Create notification for employer
+        Notification.objects.create(
+            user=job.user,
+            message=f"Nowa aplikacja od {user.get_full_name() or user.username} na stanowisko {job.title}"
+        )
+
         # Note: Sending email logic could be here too
         
         return Response({"message": "Aplikacja wysłana!"}, status=201)
@@ -605,6 +609,15 @@ class JobViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(jobs, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def applications(self, request, pk=None):
+        job = self.get_object()
+        if job.user != request.user:
+            return Response({"error": "Permission denied"}, status=403)
+        apps = Application.objects.filter(job=job)
+        serializer = ApplicationSerializer(apps, many=True)
+        return Response(serializer.data)
+
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
@@ -612,3 +625,22 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Application.objects.filter(candidate=self.request.user)
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        self.get_queryset().update(is_read=True)
+        return Response({'status': 'marked all read'})
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'marked read'})
